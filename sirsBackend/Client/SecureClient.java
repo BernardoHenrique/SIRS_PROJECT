@@ -21,7 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import javax.crypto.Cipher;
 import javax.xml.bind
     .DatatypeConverter;
-
+import javax.crypto.spec.SecretKeySpec;
 import com.google.gson.*;
 
 
@@ -30,6 +30,26 @@ public class SecureClient {
 	/** Buffer size for receiving a UDP packet. */
 	private static final int BUFFER_SIZE = 65_507;
 	private static final Charset UTF_8 = StandardCharsets.UTF_8;
+
+    public static byte[] do_Encryption(String plainText,SecretKey key) throws Exception
+    {
+		Cipher cipher = Cipher.getInstance(key.getAlgorithm());
+
+		cipher.init(Cipher.ENCRYPT_MODE, key);
+
+		return cipher.doFinal(plainText.getBytes());
+    }
+
+    public static String do_Decryption(byte[] cipherText,SecretKey key) throws Exception
+    {
+		Cipher cipher = Cipher.getInstance(key.getAlgorithm());
+
+		cipher.init(Cipher.DECRYPT_MODE, key);
+
+		byte[] result = cipher.doFinal(cipherText);
+		
+		return new String(result);
+    }
 
     public static byte[] do_RSAEncryption(String plainText,Key key) throws Exception
     {
@@ -57,14 +77,6 @@ public class SecureClient {
         return pub;
     }
 
-    public static PrivateKey readPrivateKey(String privateKeyPath) throws Exception {
-        byte[] privEncoded = readFile(privateKeyPath);
-        PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(privEncoded);
-        KeyFactory keyFacPriv = KeyFactory.getInstance("RSA");
-        PrivateKey priv = keyFacPriv.generatePrivate(privSpec);
-		return priv;
-	}
-
     public static byte[] digest(byte[] input, String algorithm) {
         MessageDigest md;
         try {
@@ -86,33 +98,29 @@ public class SecureClient {
 		// Check arguments
 		if (args.length < 2) {
 			System.err.println("Argument(s) missing!");
-			System.err.printf("Usage: java %s host port%n", SecureClient.class.getName());
 			return;
 		}
 		final String serverHost = args[0];
 		final InetAddress serverAddress = InetAddress.getByName(serverHost);
 		final int serverPort = Integer.parseInt(args[1]);
-
 		final String keyPath = args[2];
-
-		double tokenDouble = Math.abs(Math.random());
-		Integer token = (int)tokenDouble;
+		
+		Integer token = 0;
+		Integer tokenRcvd = 0;
+		Long pSM = Math.round(Math.abs(Math.random()) * 1000000);
+		String decryptedText = null;
 
 		Key key = null;
-		byte[] cipherText = null;
-		byte[] secretKeyinByte = null;
+		byte[] cipherText = null, secretKeyinByte = null, serverData = null, rcvdMsg = null;
 
 		// Create socket
 		DatagramSocket socket = new DatagramSocket();
-
-		Long pSM = Math.round(Math.abs(Math.random()) * 1000000);
 
         // Create request message
 		JsonObject requestJson = JsonParser.parseString​("{}").getAsJsonObject();
 		{
 			JsonObject infoJson = JsonParser.parseString​("{}").getAsJsonObject();
 			infoJson.addProperty("from", "Alice");
-			requestJson.addProperty("token", token.toString());
 			requestJson.add("info", infoJson); 
 			requestJson.addProperty("preSecretMaster", pSM);
 			String bodyText = "Hello." + System.lineSeparator() + "Do you want to meet tomorrow?";
@@ -123,9 +131,7 @@ public class SecureClient {
 		} catch(Exception e){
 			System.out.println("errou no sha3");
 		}
-		System.out.println(String.format("%s",bytesToHex(secretKeyinByte)));
-
-		System.out.println("Request message: " + requestJson);
+		System.out.println(String.format("PREMASTERSECRET: %s",bytesToHex(secretKeyinByte)));
 
 		String plainText = requestJson.toString();
 
@@ -141,41 +147,101 @@ public class SecureClient {
 			System.out.println("Errou");
 		}
 
-		System.out.println("Enviei:" + DatatypeConverter.printHexBinary(cipherText));
-
 		// Send request
 		DatagramPacket clientPacket = new DatagramPacket(cipherText, cipherText.length, serverAddress, serverPort);
 		socket.send(clientPacket);
 		System.out.printf("Request packet sent to %s:%d!%n", serverAddress, serverPort);
-		token++;
 
-		//------------------------------- CICLO WHILE A RECEBER RESPOSTA SERVER E RECEBER PEDIDO TERMINAL--------------------------------------
+		SecretKey secretKey = new SecretKeySpec(secretKeyinByte, 0, secretKeyinByte.length, "AES");
 
 		// Receive response
-		byte[] serverData = new byte[BUFFER_SIZE];
+		serverData = new byte[48];
 		DatagramPacket serverPacket = new DatagramPacket(serverData, serverData.length);
 		System.out.println("Wait for response packet...");
 		socket.receive(serverPacket);
-		System.out.printf("Received packet from %s:%d!%n", serverPacket.getAddress(), serverPacket.getPort());
-		System.out.printf("%d bytes %n", serverPacket.getLength());
+		rcvdMsg = serverPacket.getData();
 
-		// Convert response to string
-		String serverText = new String(serverPacket.getData(), 0, serverPacket.getLength());
-		System.out.println("Received response: " + serverText);
+		byte[] msg = new byte[rcvdMsg.length];
+		msg = rcvdMsg;
 
+		System.out.println(String.format("MENSAGEM ENCRYPTADA RECEBIDA: %s",bytesToHex(rcvdMsg)));
+
+		try{
+			decryptedText = do_Decryption(rcvdMsg, secretKey);
+		} catch(Exception e){
+			System.out.println("Errou1");
+		}
+
+		System.out.println(decryptedText);
 		// Parse JSON and extract arguments
-		JsonObject responseJson = JsonParser.parseString​(serverText).getAsJsonObject();
+		JsonObject responseJson = JsonParser.parseString​(decryptedText).getAsJsonObject();
 		String from = null, body = null;
 		{
-			JsonObject infoJson = responseJson.getAsJsonObject("info");
-			from = infoJson.get("from").getAsString();;
-			body = responseJson.get("body").getAsString();
+			body = requestJson.get("body").getAsString();
+			tokenRcvd = Integer.parseInt(requestJson.get("token").getAsString());
 		}
-		System.out.printf("Message from '%s':%n%s%n", from, body);
+		token = tokenRcvd + 1;
 
-		// Close socket
-		socket.close();
-		System.out.println("Socket closed");
+		//------------------------------- CICLO WHILE A RECEBER RESPOSTA SERVER E RECEBER PEDIDO TERMINAL--------------------------------------
+
+		while(true){
+
+			JsonObject requestJsonWhile = JsonParser.parseString​("{}").getAsJsonObject();
+			{
+				requestJsonWhile.addProperty("token", token.toString());
+				String bodyText = "Yes. See you tomorrow!";
+				requestJsonWhile.addProperty("body", bodyText);
+			}
+
+			String plainTextWhile = requestJsonWhile.toString();
+
+			try{
+				key = readPublicKey(keyPath);
+			}catch(Exception e){
+				System.out.println("Errooooooooooooooooooouuuuuuuuuuuuuuu");
+			}
+
+			try{
+				cipherText = do_Encryption(plainTextWhile, secretKey);
+			} catch(Exception e){
+				System.out.println("Errou");
+			}
+
+			// Send request
+			DatagramPacket clientPacketWhile = new DatagramPacket(cipherText, cipherText.length, serverAddress, serverPort);
+			socket.send(clientPacketWhile);
+			System.out.println(String.format("Enviei: %s",bytesToHex(cipherText)));
+
+// -------------------------------------------------------- RECEBER Resposta ----------------------------------------------------------
+			while(true){
+				// Receive response
+				byte[] serverDataWhile = new byte[BUFFER_SIZE];
+				DatagramPacket serverPacketWhile = new DatagramPacket(serverDataWhile, serverDataWhile.length);
+				System.out.println("Wait for response packet...");
+				socket.receive(serverPacketWhile);
+				rcvdMsg = serverPacketWhile.getData();
+
+				try{
+					decryptedText = do_Decryption(rcvdMsg, secretKey);
+				} catch(Exception e){
+					System.out.println("Errou");
+				}
+
+				// Parse JSON and extract arguments
+				JsonObject responseJsonWhile = JsonParser.parseString​(decryptedText).getAsJsonObject();
+				String bodyWhile = null;
+				{
+					bodyWhile = requestJson.get("body").getAsString();
+					tokenRcvd = Integer.parseInt(requestJson.get("token").getAsString());
+				}
+				
+				//if we received response from server send msg
+				if((token + 1) == tokenRcvd){
+					token = tokenRcvd + 1;
+					break;
+				}
+				//else ignore response
+			}
+		}
 	}
-
 }
