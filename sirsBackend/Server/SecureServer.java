@@ -149,10 +149,9 @@ public class SecureServer {
 		JsonObject requestJson = JsonParser.parseString​(decryptedText).getAsJsonObject();
 		String from = null, body = null;
 		{
-			JsonObject infoJson = requestJson.getAsJsonObject("info");
-			from = infoJson.get("from").getAsString();
-			body = requestJson.get("body").getAsString();
-			preSecretMaster = Integer.parseInt(requestJson.get("preSecretMaster").getAsString());
+			body = requestJson.get("info").getAsString();
+			preSecretMaster = Integer.parseInt(requestJson.get("preMasterSecret").getAsString());
+			from = requestJson.get("from").getAsString();
 		}
 
 		pSM = preSecretMaster.toString();
@@ -171,8 +170,8 @@ public class SecureServer {
 		JsonObject responseJson = JsonParser.parseString​("{}").getAsJsonObject();
 		{
 			responseJson.addProperty("token", token.toString());
-			String bodyText = "Yes. See you tomorrow!";
-			responseJson.addProperty("body", bodyText);
+			String bodyText = "Connection established";
+			responseJson.addProperty("info", bodyText);
 		}
 
 		System.out.println(responseJson.toString());
@@ -212,7 +211,7 @@ public class SecureServer {
 			// Parse JSON and extract arguments
 			requestJson = JsonParser.parseString​(decryptedText).getAsJsonObject();
 			{
-				body = requestJson.get("body").getAsString();
+				body = requestJson.get("info").getAsString();
 				tokenRcvd = Integer.parseInt(requestJson.get("token").getAsString());
 			}
 
@@ -226,8 +225,8 @@ public class SecureServer {
 				JsonObject responseJsonWhile = JsonParser.parseString​("{}").getAsJsonObject();
 				{
 					responseJson.addProperty("token", token.toString());
-					String bodyText = "Yes. See you tomorrow Server!";
-					responseJson.addProperty("body", bodyText);
+					String bodyText = "Request done";
+					responseJson.addProperty("info", bodyText);
 				}
 
 				try{
