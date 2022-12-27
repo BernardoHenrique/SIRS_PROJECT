@@ -184,11 +184,19 @@ public class SecureClient {
 
 		while(true){
 
+			// Esperar por clique e proceder
+
 			JsonObject requestJsonWhile = JsonParser.parseString​("{}").getAsJsonObject();
 			{
 				requestJsonWhile.addProperty("token", token.toString());
-				String bodyText = "Do something";
-				requestJsonWhile.addProperty("info", bodyText);
+				String restaurant = "...";
+				requestJsonWhile.addProperty("restaurant", restaurant);
+				String numberPeople = "...";
+				requestJsonWhile.addProperty("numberPeople", numberPeople);
+				String date = "...";
+				requestJsonWhile.addProperty("date", date);
+				String time = "...";
+				requestJsonWhile.addProperty("time", time);
 			}
 
 			String plainTextWhile = requestJsonWhile.toString();

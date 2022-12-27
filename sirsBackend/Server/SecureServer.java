@@ -21,9 +21,13 @@ import javax.xml.bind
     .DatatypeConverter;
 import javax.crypto.spec.SecretKeySpec;
 import com.google.gson.*;
-
+import java.sql.*;
 
 public class SecureServer {
+
+	static Connection con = null;
+	static PreparedStatement p = null;
+	static ResultSet rs = null;
 
 	/**
 	 * Maximum size for a UDP packet. The field size sets a theoretical limit of
@@ -101,12 +105,49 @@ public class SecureServer {
         }
         return sb.toString();
     }
+
+	public static void InitializeDB(){
+
+		//Class.forName("com.mysql.jdbc.Driver");
+
+		String URL = "jdbc:mysql://192.168.2.4";
+		String USERNAME = "TheCork";
+		String PASSWORD = "1221";
+		try{
+			con = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+		} catch (Exception e){
+			System.out.println("Errou na conexão BD");
+		}
+		//con = connection.connectDB();
+	}
+
+	public static void SendQuery(String sql){
+
+		try{
+			p = con.prepareStatement(sql);
+			rs = p.executeQuery();
+			while (rs.next())
+			{
+				int id = rs.getInt("cusid");
+				String name = rs.getString("cusname");
+				String email = rs.getString("email");
+				System.out.println(id + "\t\t" + name + 
+										"\t\t" + email);
+			}
+		} catch (Exception e){
+			System.out.println("Errou no pedido SQL à BD");
+		}
+	}
+
 	public static void main(String[] args) throws IOException {
 		// Check arguments
 		if (args.length < 1) {
 			System.err.println("Argument(s) missing!");
 			return;
 		}
+
+		InitializeDB();
+
 		final int port = Integer.parseInt(args[0]);
 
 		final String keyPath = args[1];
@@ -209,15 +250,22 @@ public class SecureServer {
 			}
 
 			// Parse JSON and extract arguments
+			String restaurant = null, date = null, time = null;
+			Integer numberPeople = null;
 			requestJson = JsonParser.parseString​(decryptedText).getAsJsonObject();
 			{
-				body = requestJson.get("info").getAsString();
 				tokenRcvd = Integer.parseInt(requestJson.get("token").getAsString());
+				restaurant = requestJson.get("restaurant").getAsString();
+				numberPeople = Integer.parseInt(requestJson.get("numberPeople").getAsString());
+				date = requestJson.get("date").getAsString();
+				time = requestJson.get("time").getAsString();
 			}
 
 			if((token + 1) == tokenRcvd){
 				token = tokenRcvd;
-				// ENCRIPTAR TUDO COM CHAVE SECRETA para mandar resposta
+
+				//Sendo query de acordo com pedido recebido
+				//SendQuery();
 
 				token++;
 
@@ -225,7 +273,7 @@ public class SecureServer {
 				JsonObject responseJsonWhile = JsonParser.parseString​("{}").getAsJsonObject();
 				{
 					responseJson.addProperty("token", token.toString());
-					String bodyText = "Request done";
+					String bodyText = "Reservado";
 					responseJson.addProperty("info", bodyText);
 				}
 
@@ -241,8 +289,14 @@ public class SecureServer {
 				System.out.printf("Response packet sent to %s:%d!%n", clientPacketAES.getAddress(), clientPacketAES.getPort());
 			}
 			else{
-				System.out.println("Token errado");
+				System.out.println("Erro");
+				break;
 			}
+		}
+		try{
+			con.close();
+		}catch (Exception e){
+			System.out.println("nao consegui fechar à BD");
 		}
 	}
 }
