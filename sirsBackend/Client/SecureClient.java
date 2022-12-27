@@ -119,12 +119,10 @@ public class SecureClient {
         // Create request message
 		JsonObject requestJson = JsonParser.parseString​("{}").getAsJsonObject();
 		{
-			JsonObject infoJson = JsonParser.parseString​("{}").getAsJsonObject();
-			infoJson.addProperty("from", "Alice");
-			requestJson.add("info", infoJson); 
-			requestJson.addProperty("preSecretMaster", pSM);
-			String bodyText = "Hello." + System.lineSeparator() + "Do you want to meet tomorrow?";
-			requestJson.addProperty("body", bodyText);
+			requestJson.addProperty("preMasterSecret", pSM);
+			requestJson.addProperty("from", "Client");
+			String bodyText = "Establish connection";
+			requestJson.addProperty("info", bodyText);
 		}
 		try{
 			secretKeyinByte = digest(pSM.toString().getBytes(UTF_8), "SHA3-256");
@@ -189,8 +187,8 @@ public class SecureClient {
 			JsonObject requestJsonWhile = JsonParser.parseString​("{}").getAsJsonObject();
 			{
 				requestJsonWhile.addProperty("token", token.toString());
-				String bodyText = "Yes. See you tomorrow!";
-				requestJsonWhile.addProperty("body", bodyText);
+				String bodyText = "Do something";
+				requestJsonWhile.addProperty("info", bodyText);
 			}
 
 			String plainTextWhile = requestJsonWhile.toString();
@@ -231,7 +229,7 @@ public class SecureClient {
 				JsonObject responseJsonWhile = JsonParser.parseString​(decryptedText).getAsJsonObject();
 				String bodyWhile = null;
 				{
-					bodyWhile = requestJson.get("body").getAsString();
+					bodyWhile = requestJson.get("info").getAsString();
 					tokenRcvd = Integer.parseInt(requestJson.get("token").getAsString());
 				}
 				
