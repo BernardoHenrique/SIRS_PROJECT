@@ -152,8 +152,8 @@ public class SecureServer {
 
 		final String keyPath = args[1];
 
-		byte[] bufRSA = new byte[256];
-		byte[] bufAES = new byte[48];
+		byte[] bufRSA = new byte[BUFFER_SIZE];
+		byte[] bufAES = new byte[BUFFER_SIZE];
 		DatagramSocket socket = new DatagramSocket(port);		
 
 		DatagramPacket clientPacketAES = new DatagramPacket(bufAES, bufAES.length);
@@ -163,16 +163,19 @@ public class SecureServer {
 
 		Key key = null;
 		String decryptedText = null, pSM = null;
-		Integer tokenRcvd = 0, preSecretMaster = 0;
+		Integer preSecretMaster = 0;
 		// Create server socket
 		InetAddress clientAddress = clientPacketRSA.getAddress();
-		byte[] clientData = clientPacketRSA.getData(), clientDataWhile = null, responseBt = null, finalCipherText = clientData, serverData = null;
+		byte[] clientData = clientPacketRSA.getData(), clientDataWhile = null, responseBt = null, serverData = null;
 		byte[] secretKeyinByte = null;
-		double tokenDouble = Math.abs(Math.random());
+		double tokenDouble = Math.round(Math.abs(Math.random()) * 1000000);
 		Integer token = (int)tokenDouble;
 		int clientPort = clientPacketRSA.getPort(), clientLength = clientPacketRSA.getLength();
 
 		System.out.printf("Received request packet from %s:%d!%n", clientAddress, clientPort);
+
+		byte[] finalCipherText = new byte[clientPacketRSA.getLength()];
+		System.arraycopy(clientData, 0, finalCipherText, 0, clientPacketRSA.getLength());
 
 		try{
 			key = readPrivateKey(keyPath);
@@ -208,14 +211,15 @@ public class SecureServer {
 		System.out.println(String.format("PREMASTERSECRET: %s",bytesToHex(secretKeyinByte)));
 
 		// Create response message
+
 		JsonObject responseJson = JsonParser.parseString​("{}").getAsJsonObject();
 		{
-			responseJson.addProperty("token", token.toString());
-			String bodyText = "Connection established";
-			responseJson.addProperty("info", bodyText);
+				JsonObject infoJson = JsonParser.parseString​("{}").getAsJsonObject();
+				infoJson.addProperty("token", token.toString());
+				responseJson.add("info", infoJson);
+				String bodyText = "Connection established";
+				responseJson.addProperty("body", bodyText);
 		}
-
-		System.out.println(responseJson.toString());
 
 		try{
 			serverData = do_Encryption(responseJson.toString(), secretKey);
@@ -223,12 +227,11 @@ public class SecureServer {
 			System.out.println("Errou1");
 		}
 
-		System.out.println(String.format("MENSAGEM ENCRYPTADA ENVIADA: %s %d",bytesToHex(serverData), serverData.length));
+		System.out.printf("Enviei %s", responseJson.toString());
 
 		// Send response
 		DatagramPacket serverPacket = new DatagramPacket(serverData, serverData.length, clientPacketRSA.getAddress(), clientPacketRSA.getPort());
 		socket.send(serverPacket);
-		System.out.printf("Response packet sent to %s:%d!%n", clientPacketRSA.getAddress(), clientPacketRSA.getPort());
 
 		while (true) {
 			//-------------------------------------------- RECEBER PEDIDOS E DESENCRIPTAR COM CHAVE SECRETA
@@ -236,33 +239,32 @@ public class SecureServer {
 			socket.receive(clientPacketAES);
 			clientAddress = clientPacketAES.getAddress();
 			clientPort = clientPacketAES.getPort();
-			clientLength = clientPacketAES.getLength();
-			clientData = clientPacketAES.getData();
-			System.out.printf("Received request packet from %s:%d!%n", clientAddress, clientPort);
-			finalCipherText = clientData;
 
-			System.out.println(String.format("Recebi: %s %d",bytesToHex(finalCipherText), finalCipherText.length));
+			byte[] finalCipherTextWhile = new byte[clientPacketAES.getLength()];
+			System.arraycopy(clientPacketAES.getData(), 0, finalCipherTextWhile, 0, clientPacketAES.getLength());
 
 			try{
-				decryptedText = do_Decryption(finalCipherText, secretKey);
+				decryptedText = do_Decryption(finalCipherTextWhile, secretKey);
 			} catch(Exception e){
 				System.out.println("Errou");
 			}
 
+			System.out.printf("Recebi %s", decryptedText);
+
 			// Parse JSON and extract arguments
-			String restaurant = null, date = null, time = null;
-			Integer numberPeople = null;
+			String restaurant = null, date = null, time = null, tokenRcvd = null, numberPeople = null;
 			requestJson = JsonParser.parseString​(decryptedText).getAsJsonObject();
 			{
-				tokenRcvd = Integer.parseInt(requestJson.get("token").getAsString());
+				JsonObject infoJsonWhile = requestJson.getAsJsonObject("info");
+				tokenRcvd = infoJsonWhile.get("token").getAsString();
 				restaurant = requestJson.get("restaurant").getAsString();
-				numberPeople = Integer.parseInt(requestJson.get("numberPeople").getAsString());
+				numberPeople = requestJson.get("numberPeople").getAsString();
 				date = requestJson.get("date").getAsString();
 				time = requestJson.get("time").getAsString();
 			}
 
-			if((token + 1) == tokenRcvd){
-				token = tokenRcvd;
+			if((token + 1) == Integer.parseInt(tokenRcvd)){
+				token = Integer.parseInt(tokenRcvd);
 
 				//Sendo query de acordo com pedido recebido
 				//SendQuery();
@@ -272,9 +274,11 @@ public class SecureServer {
 				// Create response message
 				JsonObject responseJsonWhile = JsonParser.parseString​("{}").getAsJsonObject();
 				{
-					responseJson.addProperty("token", token.toString());
-					String bodyText = "Reservado";
-					responseJson.addProperty("info", bodyText);
+					JsonObject infoJson = JsonParser.parseString​("{}").getAsJsonObject();
+					infoJson.addProperty("token", token.toString());
+					responseJsonWhile.add("info", infoJson);
+					String bodyText = "Table reservation succeded";
+					responseJsonWhile.addProperty("body", bodyText);
 				}
 
 				try{
@@ -283,10 +287,11 @@ public class SecureServer {
 					System.out.println("Errou");
 				}
 
+				System.out.printf("Enviei %s", responseJsonWhile.toString());
+
 				// Send response
 				DatagramPacket serverPacketWhile = new DatagramPacket(serverData, serverData.length, clientPacketAES.getAddress(), clientPacketAES.getPort());
 				socket.send(serverPacketWhile);
-				System.out.printf("Response packet sent to %s:%d!%n", clientPacketAES.getAddress(), clientPacketAES.getPort());
 			}
 			else{
 				System.out.println("Erro");
