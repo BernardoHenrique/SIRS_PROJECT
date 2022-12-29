@@ -22,6 +22,9 @@ import javax.xml.bind
 import javax.crypto.spec.SecretKeySpec;
 import com.google.gson.*;
 import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 public class SecureServer {
 
@@ -108,17 +111,26 @@ public class SecureServer {
 
 	public static void InitializeDB(){
 
-		//Class.forName("com.mysql.jdbc.Driver");
-
-		String URL = "jdbc:mysql://192.168.2.4";
-		String USERNAME = "TheCork";
-		String PASSWORD = "1221";
 		try{
-			con = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-		} catch (Exception e){
-			System.out.println("Errou na conexão BD");
+			Class.forName("org.postgresql.Driver");
+		}catch (Exception e){
+			System.out.println("eror");
 		}
-		//con = connection.connectDB();
+
+		int port = 5432;
+		String database = "thecork";
+		String username = "t048";
+		String password = "1234";
+
+		String url = "jdbc:postgresql://localhost" + ":" + port + "/" + database;
+
+		//192.168.2.4
+
+		try (Connection conn = DriverManager.getConnection(url, username, password)) {
+			System.out.println("Connected to the PostgreSQL server successfully.");
+		} catch (Exception e) {
+			System.out.println(e);
+		}
 	}
 
 	public static void SendQuery(String sql){
@@ -146,33 +158,38 @@ public class SecureServer {
 			return;
 		}
 
+		//Initialize database
 		InitializeDB();
 
+
+		//Parse arguments and initialize variables
 		final int port = Integer.parseInt(args[0]);
 
 		final String keyPath = args[1];
 
 		byte[] bufRSA = new byte[BUFFER_SIZE];
 		byte[] bufAES = new byte[BUFFER_SIZE];
+
+		//Create server socket
 		DatagramSocket socket = new DatagramSocket(port);		
 
 		DatagramPacket clientPacketAES = new DatagramPacket(bufAES, bufAES.length);
 		DatagramPacket clientPacketRSA = new DatagramPacket(bufRSA, bufRSA.length);
-		socket.receive(clientPacketRSA);
 
+		//receive first connection request
+		socket.receive(clientPacketRSA);
 
 		Key key = null;
 		String decryptedText = null, pSM = null;
 		Integer preSecretMaster = 0;
-		// Create server socket
 		InetAddress clientAddress = clientPacketRSA.getAddress();
 		byte[] clientData = clientPacketRSA.getData(), clientDataWhile = null, responseBt = null, serverData = null;
 		byte[] secretKeyinByte = null;
+
+		//Create freshness token and initialize it
 		double tokenDouble = Math.round(Math.abs(Math.random()) * 1000000);
 		Integer token = (int)tokenDouble;
 		int clientPort = clientPacketRSA.getPort(), clientLength = clientPacketRSA.getLength();
-
-		System.out.printf("Received request packet from %s:%d!%n", clientAddress, clientPort);
 
 		byte[] finalCipherText = new byte[clientPacketRSA.getLength()];
 		System.arraycopy(clientData, 0, finalCipherText, 0, clientPacketRSA.getLength());
@@ -183,6 +200,7 @@ public class SecureServer {
 			System.out.println("Errouuuuuuuuuuuuuuu");
 		}		
 
+		//Decrypt information with server's private key
 		try{
 			decryptedText = do_RSADecryption(finalCipherText, key);
 		} catch(Exception e){
@@ -200,18 +218,15 @@ public class SecureServer {
 
 		pSM = preSecretMaster.toString();
 
+		//Create secret key with preMasterSecret
 		try{
 			secretKeyinByte = digest(pSM.getBytes(UTF_8), "SHA3-256");
 		} catch(Exception e){
 			System.out.println("errou no sha3");
 		}
-
 		SecretKey secretKey = new SecretKeySpec(secretKeyinByte, 0, secretKeyinByte.length, "AES");
 
-		System.out.println(String.format("PREMASTERSECRET: %s",bytesToHex(secretKeyinByte)));
-
-		// Create response message
-
+		// Create response message with connection established and send new token to check freshness of future messages
 		JsonObject responseJson = JsonParser.parseString​("{}").getAsJsonObject();
 		{
 				JsonObject infoJson = JsonParser.parseString​("{}").getAsJsonObject();
@@ -221,6 +236,7 @@ public class SecureServer {
 				responseJson.addProperty("body", bodyText);
 		}
 
+		//Encrypt data with secret key
 		try{
 			serverData = do_Encryption(responseJson.toString(), secretKey);
 		} catch(Exception e){
@@ -234,7 +250,8 @@ public class SecureServer {
 		socket.send(serverPacket);
 
 		while (true) {
-			//-------------------------------------------- RECEBER PEDIDOS E DESENCRIPTAR COM CHAVE SECRETA
+			// -------------------------------------------------- Receive requests ------------------------------------------
+			// Receive requests from client
 
 			socket.receive(clientPacketAES);
 			clientAddress = clientPacketAES.getAddress();
@@ -243,6 +260,7 @@ public class SecureServer {
 			byte[] finalCipherTextWhile = new byte[clientPacketAES.getLength()];
 			System.arraycopy(clientPacketAES.getData(), 0, finalCipherTextWhile, 0, clientPacketAES.getLength());
 
+			//Decrypt request information
 			try{
 				decryptedText = do_Decryption(finalCipherTextWhile, secretKey);
 			} catch(Exception e){
@@ -263,8 +281,13 @@ public class SecureServer {
 				time = requestJson.get("time").getAsString();
 			}
 
+			// -------------------------------------------------- Send responses ------------------------------------------
+
+			//Check fressness of the message
 			if((token + 1) == Integer.parseInt(tokenRcvd)){
 				token = Integer.parseInt(tokenRcvd);
+
+				//Process information received and query it to the database
 
 				//Sendo query de acordo com pedido recebido
 				//SendQuery();
@@ -281,6 +304,7 @@ public class SecureServer {
 					responseJsonWhile.addProperty("body", bodyText);
 				}
 
+				//Encrypt response message with secret key
 				try{
 					serverData = do_Encryption(responseJsonWhile.toString(), secretKey);
 				} catch(Exception e){

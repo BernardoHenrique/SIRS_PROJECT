@@ -138,13 +138,14 @@ public class SecureClient {
 			System.out.println("Errooooooooooooooooooouuuuuuuuuuuuuuu");
 		}
 
+		//Encrypt with server's public key
 		try{
 			cipherText = do_RSAEncryption(plainText, key);
 		} catch(Exception e){
 			System.out.println("Errou");
 		}
 
-		// Send request
+		// Send connection request
 		DatagramPacket clientPacket = new DatagramPacket(cipherText, cipherText.length, serverAddress, serverPort);
 		socket.send(clientPacket);
 		System.out.printf("Request packet sent to %s:%d!%n", serverAddress, serverPort);
@@ -160,6 +161,7 @@ public class SecureClient {
 		byte[] rcvdMsg = new byte[serverPacket.getLength()];
 		System.arraycopy(serverPacket.getData(), 0, rcvdMsg, 0, serverPacket.getLength());
 
+		//Decrypt with secret key
 		try{
 			decryptedText = do_Decryption(rcvdMsg, secretKey);
 		} catch(Exception e){
@@ -167,8 +169,8 @@ public class SecureClient {
 		}
 
 		System.out.printf("Recebi %s", decryptedText);
-		// Parse JSON and extract arguments
 
+		// Parse JSON and extract arguments
 		JsonObject responseJson = JsonParser.parseString​(decryptedText).getAsJsonObject();
 		String body = null, tokenRcvd = null;
 		{
@@ -182,9 +184,10 @@ public class SecureClient {
 		//------------------------------- CICLO WHILE A RECEBER RESPOSTA SERVER E RECEBER PEDIDO TERMINAL--------------------------------------
 
 		while(true){
+// -------------------------------------------------------- Send Requests ----------------------------------------------------------
+			//Wait for frontend click and store that information
 
-			// Esperar por clique e proceder
-
+			//Store info in Json format
 			JsonObject requestJsonWhile = JsonParser.parseString​("{}").getAsJsonObject();
 			{
 				JsonObject infoJson = JsonParser.parseString​("{}").getAsJsonObject();
@@ -204,6 +207,7 @@ public class SecureClient {
 
 			System.out.printf("Enviei %s", plainTextWhile);
 
+			//Encrypt information with secret key
 			try{
 				cipherText = do_Encryption(plainTextWhile, secretKey);
 			} catch(Exception e){
@@ -214,9 +218,9 @@ public class SecureClient {
 			DatagramPacket clientPacketWhile = new DatagramPacket(cipherText, cipherText.length, serverAddress, serverPort);
 			socket.send(clientPacketWhile);
 
-// -------------------------------------------------------- RECEBER Resposta ----------------------------------------------------------
+// -------------------------------------------------------- Receive Responses ----------------------------------------------------------
 			while(true){
-				// Receive response
+				// Receive response from webserver
 				byte[] serverDataWhile = new byte[BUFFER_SIZE];
 				DatagramPacket serverPacketWhile = new DatagramPacket(serverDataWhile, serverDataWhile.length);
 				System.out.println("Wait for response packet...");
@@ -225,12 +229,14 @@ public class SecureClient {
 				byte[] rcvdMsgWhile = new byte[serverPacketWhile.getLength()];
 				System.arraycopy(serverPacketWhile.getData(), 0, rcvdMsgWhile, 0, serverPacketWhile.getLength());
 
+				//Decrypt with secret key
 				try{
 					decryptedText = do_Decryption(rcvdMsgWhile, secretKey);
 				} catch(Exception e){
 					System.out.println("Errou");
 				}
 
+				//Parse info to Json
 				responseJson = JsonParser.parseString​(decryptedText).getAsJsonObject();
 				{
 					JsonObject infoJson = responseJson.getAsJsonObject("info");
@@ -240,7 +246,7 @@ public class SecureClient {
 
 				System.out.printf("Recebi %s", decryptedText);
 				
-				//if we received response from server send msg
+				//Check message freshness
 				if((token + 1) == Integer.parseInt(tokenRcvd)){
 					token = Integer.parseInt(tokenRcvd) + 1;
 					break;
