@@ -1,27 +1,19 @@
 import React from "react";
-import logo from "../logo.svg";
-import {HvButton, HvContainer} from "@hitachivantara/uikit-react-core";
+import {Link} from "react-router-dom";
 
 export const Home = () => {
     return (
     <div>
         <div className="App">
             <header className="App-header">
-                <img src={logo} className="App-logo" alt="logo" />
-                <HvContainer>
-                    <p>
-                        Edit <code>src/App.js</code> and save to reload.
-                    </p>
-                    <HvButton category="primary">Login</HvButton>
-                </HvContainer>
-                <a
-                    className="App-link"
-                    href="https://reactjs.org"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <img src="//cdn.shopify.com/s/files/1/0398/4549/4945/files/new_year_1.png?v=1640392869"
+                     alt="The Cork Collection"
+                     width="350" height="160.0" />
+                <br/>
+                <Link className="App-link" to="/LoginPage"
                 >
-                    Learn React
-                </a>
+                    Login
+                </Link>
             </header>
         </div>
     </div>

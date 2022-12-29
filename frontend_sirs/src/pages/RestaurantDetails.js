@@ -65,7 +65,7 @@ export const RestaurantDetails = () => {
             <br />
             <HvTimePicker onChange={() => setTime(true)} required id="main" label="Time" placeholder="Select time" locale="pt-pt" />
             <br />
-            <HvCheckBox disabled={cardPoints < 10} onClick={() => setDiscount(!useDiscount)} label="Use Card points" />
+            <HvCheckBox disabled={cardPoints < 10} checked={useDiscount} onClick={() => setDiscount(!useDiscount)} label="Use Card points" />
             <h3>Price {calcPrice()}€</h3>
             <HvButton onClick={() => {setSuccess(true); updateCardPoints()}} disabled={!validateEntry()} category="primary">
                 Accept
@@ -73,7 +73,7 @@ export const RestaurantDetails = () => {
             <HvDialog
                 disableBackdropClick
                 open={showSuccess}
-                onClose={() => setSuccess(false)}
+                onClose={() => {setSuccess(false); setDiscount(false)}}
                 id="dialog"
                 firstFocusable="dialog-close"
             >
