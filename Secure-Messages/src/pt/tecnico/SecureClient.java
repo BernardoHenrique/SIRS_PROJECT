@@ -31,7 +31,8 @@ public class SecureClient {
 	private static final int BUFFER_SIZE = 65_507;
 	private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
-    public static byte[] do_Encryption(String plainText,SecretKey key) throws Exception
+	/*Encryption function with secret key */
+    public static byte[] do_Encryption(String plainText, SecretKey key) throws Exception
     {
 		Cipher cipher = Cipher.getInstance(key.getAlgorithm());
 
@@ -40,7 +41,8 @@ public class SecureClient {
 		return cipher.doFinal(plainText.getBytes());
     }
 
-    public static String do_Decryption(byte[] cipherText,SecretKey key) throws Exception
+	/*Decryption function with secret key */
+    public static String do_Decryption(byte[] cipherText, SecretKey key) throws Exception
     {
 		Cipher cipher = Cipher.getInstance(key.getAlgorithm());
 
@@ -51,6 +53,7 @@ public class SecureClient {
 		return new String(result);
     }
 
+	/*Encryption function using RSA algorithm */
     public static byte[] do_RSAEncryption(String plainText,Key key) throws Exception
     {
         Cipher cipher = Cipher.getInstance("RSA");
@@ -77,6 +80,7 @@ public class SecureClient {
         return pub;
     }
 
+	/*Digest function to use in pre master secret */
     public static byte[] digest(byte[] input, String algorithm) {
         MessageDigest md;
         try {
@@ -105,8 +109,12 @@ public class SecureClient {
 		final int serverPort = Integer.parseInt(args[1]);
 		final String keyPath = args[2];
 		
+		/*Create the token that will be responsible for freshness */
 		Integer token = 0;
-		Long pSM = Math.round(Math.abs(Math.random()) * 1000000);
+
+		/*Generate pre master secret */
+		Long preMasterSecret = Math.round(Math.abs(Math.random()) * 1000000);
+
 		String decryptedText = null;
 
 		Key key = null;
@@ -118,31 +126,32 @@ public class SecureClient {
         // Create request message
 		JsonObject requestJson = JsonParser.parseString​("{}").getAsJsonObject();
 		{
-			requestJson.addProperty("preMasterSecret", pSM);
+			requestJson.addProperty("preMasterSecret", preMasterSecret);
 			requestJson.addProperty("from", "Client");
 			String bodyText = "Establish connection";
 			requestJson.addProperty("info", bodyText);
 		}
 		try{
-			secretKeyinByte = digest(pSM.toString().getBytes(UTF_8), "SHA3-256");
+			secretKeyinByte = digest(preMasterSecret.toString().getBytes(UTF_8), "SHA3-256");
 		} catch(Exception e){
-			System.out.println("errou no sha3");
+			System.out.println("Error in SHA3");
 		}
 		System.out.println(String.format("PREMASTERSECRET: %s",bytesToHex(secretKeyinByte)));
 
 		String plainText = requestJson.toString();
 
+		/*Read server's public key */
 		try{
 			key = readPublicKey(keyPath);
 		}catch(Exception e){
-			System.out.println("Errooooooooooooooooooouuuuuuuuuuuuuuu");
+			System.out.println("Error reading server's public key");
 		}
 
 		//Encrypt with server's public key
 		try{
 			cipherText = do_RSAEncryption(plainText, key);
 		} catch(Exception e){
-			System.out.println("Errou");
+			System.out.println("Error encrypting with server's public key");
 		}
 
 		// Send connection request
@@ -150,6 +159,7 @@ public class SecureClient {
 		socket.send(clientPacket);
 		System.out.printf("Request packet sent to %s:%d!%n", serverAddress, serverPort);
 
+		/*Create secret key with AES algorithm */
 		SecretKey secretKey = new SecretKeySpec(secretKeyinByte, 0, secretKeyinByte.length, "AES");
 
 		// Receive response
@@ -165,7 +175,7 @@ public class SecureClient {
 		try{
 			decryptedText = do_Decryption(rcvdMsg, secretKey);
 		} catch(Exception e){
-			System.out.println("Errou1");
+			System.out.println("Error decrypting with secret key");
 		}
 
 		System.out.printf("Recebi %s", decryptedText);
@@ -211,7 +221,7 @@ public class SecureClient {
 			try{
 				cipherText = do_Encryption(plainTextWhile, secretKey);
 			} catch(Exception e){
-				System.out.println("Errou");
+				System.out.println("Error encrypting with secret key");
 			}
 
 			// Send request
@@ -233,7 +243,7 @@ public class SecureClient {
 				try{
 					decryptedText = do_Decryption(rcvdMsgWhile, secretKey);
 				} catch(Exception e){
-					System.out.println("Errou");
+					System.out.println("Error decrypting with secrey key");
 				}
 
 				//Parse info to Json

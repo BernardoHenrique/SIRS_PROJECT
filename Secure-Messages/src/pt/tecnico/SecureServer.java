@@ -28,6 +28,7 @@ import java.sql.SQLException;
 
 public class SecureServer {
 
+	/* Database stuff */
 	static Connection con = null;
 	static PreparedStatement p = null;
 	static ResultSet rs = null;
@@ -44,7 +45,9 @@ public class SecureServer {
 	private static final int BUFFER_SIZE = MAX_UDP_DATA_SIZE;
 	private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
-    public static byte[] do_Encryption(String plainText,SecretKey key) throws Exception
+
+	/*Encryption function with secret key */
+    public static byte[] do_Encryption(String plainText, SecretKey key) throws Exception
     {
 		Cipher cipher = Cipher.getInstance(key.getAlgorithm());
 
@@ -53,7 +56,8 @@ public class SecureServer {
 		return cipher.doFinal(plainText.getBytes());
     }
 
-    public static String do_Decryption(byte[] cipherText,SecretKey key) throws Exception
+	/*Decryption function with secret key */
+    public static String do_Decryption(byte[] cipherText, SecretKey key) throws Exception
     {
 		Cipher cipher = Cipher.getInstance(key.getAlgorithm());
 
@@ -64,6 +68,7 @@ public class SecureServer {
 		return new String(result);
     }
 
+	/*Decryption function using RSA algorithm */
     public static String do_RSADecryption(byte[] cipherText, Key key) throws Exception
     {
         Cipher cipher = Cipher.getInstance("RSA");
@@ -83,6 +88,7 @@ public class SecureServer {
         return content;
     }
 
+	/*Read private key sent by client */
     public static PrivateKey readPrivateKey(String privateKeyPath) throws Exception {
         byte[] privEncoded = readFile(privateKeyPath);
         PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(privEncoded);
@@ -109,12 +115,13 @@ public class SecureServer {
         return sb.toString();
     }
 
+	/*Database initialization */
 	public static void InitializeDB(){
 
 		try{
 			Class.forName("org.postgresql.Driver");
 		}catch (Exception e){
-			System.out.println("eror");
+			System.out.println("Error in creating database");
 		}
 
 		int port = 5432;
@@ -129,10 +136,11 @@ public class SecureServer {
 		try (Connection conn = DriverManager.getConnection(url, username, password)) {
 			System.out.println("Connected to the PostgreSQL server successfully.");
 		} catch (Exception e) {
-			System.out.println(e);
+			System.out.println("Failed to connect to database");
 		}
 	}
 
+	/*Send querys to the database */
 	public static void SendQuery(String sql){
 
 		try{
@@ -147,7 +155,7 @@ public class SecureServer {
 										"\t\t" + email);
 			}
 		} catch (Exception e){
-			System.out.println("Errou no pedido SQL à BD");
+			System.out.println("Error sending query to the database");
 		}
 	}
 
@@ -180,15 +188,16 @@ public class SecureServer {
 		socket.receive(clientPacketRSA);
 
 		Key key = null;
-		String decryptedText = null, pSM = null;
+		String decryptedText = null, preMasterSecret = null;
 		Integer preSecretMaster = 0;
 		InetAddress clientAddress = clientPacketRSA.getAddress();
 		byte[] clientData = clientPacketRSA.getData(), clientDataWhile = null, responseBt = null, serverData = null;
 		byte[] secretKeyinByte = null;
 
-		//Create freshness token and initialize it
+		/*Create the token that will be responsible for freshness and initialize it */
 		double tokenDouble = Math.round(Math.abs(Math.random()) * 1000000);
 		Integer token = (int)tokenDouble;
+
 		int clientPort = clientPacketRSA.getPort(), clientLength = clientPacketRSA.getLength();
 
 		byte[] finalCipherText = new byte[clientPacketRSA.getLength()];
@@ -197,14 +206,14 @@ public class SecureServer {
 		try{
 			key = readPrivateKey(keyPath);
 		} catch(Exception e){
-			System.out.println("Errouuuuuuuuuuuuuuu");
+			System.out.println("Error reading the server's private key");
 		}		
 
 		//Decrypt information with server's private key
 		try{
 			decryptedText = do_RSADecryption(finalCipherText, key);
 		} catch(Exception e){
-			System.out.println("Errou");
+			System.out.println("Error decrypting with server's private key");
 		}
 
 		// Parse JSON and extract arguments
@@ -216,13 +225,13 @@ public class SecureServer {
 			from = requestJson.get("from").getAsString();
 		}
 
-		pSM = preSecretMaster.toString();
+		preMasterSecret = preSecretMaster.toString();
 
 		//Create secret key with preMasterSecret
 		try{
-			secretKeyinByte = digest(pSM.getBytes(UTF_8), "SHA3-256");
+			secretKeyinByte = digest(preMasterSecret.getBytes(UTF_8), "SHA3-256");
 		} catch(Exception e){
-			System.out.println("errou no sha3");
+			System.out.println("Error in SHA3");
 		}
 		SecretKey secretKey = new SecretKeySpec(secretKeyinByte, 0, secretKeyinByte.length, "AES");
 
@@ -240,7 +249,7 @@ public class SecureServer {
 		try{
 			serverData = do_Encryption(responseJson.toString(), secretKey);
 		} catch(Exception e){
-			System.out.println("Errou1");
+			System.out.println("Error encrypting with secret key");
 		}
 
 		System.out.printf("Enviei %s", responseJson.toString());
@@ -264,7 +273,7 @@ public class SecureServer {
 			try{
 				decryptedText = do_Decryption(finalCipherTextWhile, secretKey);
 			} catch(Exception e){
-				System.out.println("Errou");
+				System.out.println("Error decrypting with secret key");
 			}
 
 			System.out.printf("Recebi %s", decryptedText);
@@ -308,7 +317,7 @@ public class SecureServer {
 				try{
 					serverData = do_Encryption(responseJsonWhile.toString(), secretKey);
 				} catch(Exception e){
-					System.out.println("Errou");
+					System.out.println("Error encrypting with secret key");
 				}
 
 				System.out.printf("Enviei %s", responseJsonWhile.toString());
@@ -318,14 +327,14 @@ public class SecureServer {
 				socket.send(serverPacketWhile);
 			}
 			else{
-				System.out.println("Erro");
+				System.out.println("Not fresh request");
 				break;
 			}
 		}
 		try{
 			con.close();
 		}catch (Exception e){
-			System.out.println("nao consegui fechar à BD");
+			System.out.println("Can't close database");
 		}
 	}
 }
