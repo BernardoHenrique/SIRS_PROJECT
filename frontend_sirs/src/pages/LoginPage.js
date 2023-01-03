@@ -1,15 +1,30 @@
 import React, {useState} from "react";
 import {HvButton, HvContainer, HvInput} from "@hitachivantara/uikit-react-core"
 import {Link} from "react-router-dom";
+import io from 'socket.io-client';
 
 export const LoginPage = () => {
 
     const [userName, setUserName] = useState("");
     const [password, setPassword] = useState("");
+    const socket = io('http://localhost:8000');
+    const [verified, setVerified] = useState(false);
+
+
 
     const validateEntries = () => {
-      if (userName === "aaaa" && password === "1234567")
-          return true
+         socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+        socket.emit('message', {
+            cmd: 'login',
+            user: {userName},
+            password: {password},
+        });
+        socket.on('message', data => {
+            console.log(data.response); // 'Hello, client!'
+            setVerified(data.response);
+        });
     }
 
     
@@ -44,7 +59,7 @@ export const LoginPage = () => {
                 validationMessages={validationMessages}
             />
             <br/>
-            {validateEntries() ? (
+            {verified ? (
             <Link to="/Restaurants">
                 <HvButton category="primary" onClick={() => validateEntries()}>
                     Confirm
