@@ -213,7 +213,7 @@ public class SecureClient {
 		} catch (Exception e){
 			System.out.println(e);
 		}
-		if(decryptedHmac.getBytes().equals(hmacToCheck) == false){
+		if(decryptedHmac.getBytes() == hmacToCheck){
 			System.out.println("Compromised message");
 		}
 
@@ -322,7 +322,7 @@ public class SecureClient {
 				} catch(Exception e){
 					System.out.println(e);
 				}
-				System.out.printf("Hmac %s\n", );
+				System.out.printf("Hmac %s\n", Base64.getEncoder().encodeToString(hmacBytes));
 		
 				try{
 					hmacToCheck = digest(responseJson.toString().getBytes(UTF_8), "SHA3-256");
@@ -331,7 +331,7 @@ public class SecureClient {
 				}
 
 				System.out.printf("1: %s 2: %s\n",decryptedHmac, Base64.getEncoder().encodeToString(hmacToCheck));
-				if(decryptedHmac.getBytes().equals(hmacToCheck) == false){
+				if(decryptedHmac.getBytes() == hmacToCheck){
 					System.out.println("Compromised message");
 				}
 		
@@ -344,7 +344,6 @@ public class SecureClient {
 				}
 				//else ignore response
 			}
-			break;
 		}
 	}
 }

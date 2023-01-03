@@ -326,7 +326,7 @@ public class SecureServer {
 			} catch (Exception e){
 				System.out.println(e);
 			}
-			if(decryptedHmac.getBytes().equals(hmacToCheck) == false){
+			if(decryptedHmac.getBytes() == hmacToCheck){
 				System.out.println("Compromised message");
 			}
 
@@ -376,7 +376,7 @@ public class SecureServer {
 					toSendResponse.addProperty("hmac", Base64.getEncoder().encodeToString(hmac));
 				}
 
-				System.out.printf("Hmac %s\n", Base64.getEncoder().encodeToString(digest(responseJsonWhile.toString().getBytes(UTF_8), "SHA3-256")));
+				System.out.printf("Hmac %s\n", Base64.getEncoder().encodeToString(hmac));
 
 				System.out.printf("Enviei %s\n", responseJsonWhile.toString());
 
