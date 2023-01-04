@@ -1,5 +1,12 @@
 import React, {useState, useEffect} from "react";
-import {HvButton, HvContainer, HvInput} from "@hitachivantara/uikit-react-core"
+import {
+    HvButton,
+    HvContainer,
+    HvDialog, HvDialogActions,
+    HvDialogContent,
+    HvDialogTitle,
+    HvInput
+} from "@hitachivantara/uikit-react-core"
 import {Link} from "react-router-dom";
 import io from 'socket.io-client';
 
@@ -10,12 +17,8 @@ export const LoginPage = () => {
     const socket = io.connect('https://localhost:3001');
     const [verified, setVerified] = useState(false);
 
-
-
     const validateEntries = () => {
-         socket.on('connect', () => {
-            console.log('Connected to server');
-        });
+        console.log(userName)
         socket.emit('login', {
             user: { userName },
             password: { password },
@@ -23,7 +26,7 @@ export const LoginPage = () => {
     }
 
     useEffect(() => {
-        socket.on("receive_permission", (data) => {
+        socket.on('receive_permission', (data) => {
             console.log(data);
             if(data.permission === "accept")
                 setVerified(true)
@@ -63,16 +66,27 @@ export const LoginPage = () => {
                 validationMessages={validationMessages}
             />
             <br/>
-            {verified ? (
-            <Link to="/Restaurants">
                 <HvButton category="primary" onClick={() => validateEntries()}>
                     Confirm
                 </HvButton>
-            </Link>) : (
-                <HvButton category="primary" onClick={() => validateEntries()}>
-                    Confirm
-                </HvButton>
-            )}
+            <div>
+                <HvDialog
+                    disableBackdropClick
+                    open={verified}
+                    id="test"
+                    firstFocusable="test-close"
+                >
+                    <HvDialogTitle variant="warning">SUCCESS</HvDialogTitle>
+                    Lets book your reservation
+                    <HvDialogActions>
+                        <Link to="/Restaurants">
+                        <HvButton id="apply" category="ghost">
+                            Continue
+                        </HvButton>
+                        </Link>
+                    </HvDialogActions>
+                </HvDialog>
+            </div>
         </HvContainer>
     );
 }

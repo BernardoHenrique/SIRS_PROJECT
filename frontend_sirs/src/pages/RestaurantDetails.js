@@ -1,4 +1,4 @@
-import { React, useState } from "react";
+import {React, useEffect, useState} from "react";
 import { useParams } from "react-router-dom";
 import {
     HvButton,
@@ -8,21 +8,30 @@ import {
     HvInput,
     HvTimePicker
 } from "@hitachivantara/uikit-react-core";
+import io from "socket.io-client";
 
 export const RestaurantDetails = () => {
     const { name } = useParams();
-    const [numberPeople, setPeople] = useState(0);
+    const [numberPeople, setPeople] = useState();
     const [showSuccess, setSuccess] = useState(false);
-    const [cardPoints, setCardPoints] = useState(15);
+    const [cardPoints, setCardPoints] = useState(0);
     const [useDiscount, setDiscount] = useState(false);
     const [date, setDate] = useState(false);
     const [time, setTime] = useState(false);
+    const socket = io.connect('https://localhost:3001');
 
     const validationMessages = {
         requiredError: "The number is required",
         maxCharError: "Number is too big",
         typeMismatchError: "Value is not a number",
     };
+
+    useEffect(() => {
+        socket.emit('getCardPoints');
+        socket.on('setCardPoints', (data) => {
+            setCardPoints(data.points);
+        });
+    }, []);
 
     const validateEntry = () => {
         return !isNaN(numberPeople) && numberPeople > 0 && date && time;
@@ -82,7 +91,7 @@ export const RestaurantDetails = () => {
                     Reservation Completed
                 </HvDialogContent>
                 <HvDialogActions>
-                    <HvButton id="cancel" category="ghost" onClick={() => setSuccess(false)}>
+                    <HvButton id="cancel" category="ghost" onClick={() => {setSuccess(false); setDiscount(false)}}>
                         Close
                     </HvButton>
                 </HvDialogActions>

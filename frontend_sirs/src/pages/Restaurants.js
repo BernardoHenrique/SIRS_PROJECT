@@ -12,8 +12,8 @@ export const Restaurants = () => {
                 <div style={{ paddingLeft: 20, display: "flex", flexDirection: "row", gap: 10 }}>
                     <ul>
                     {restaurants.map((element) => (
-                        <li>
-                            <Link key={element} to={`/Restaurants/${element}`}>{element}</Link>
+                        <li key={element}>
+                            <Link to={`/Restaurants/${element}`}>{element}</Link>
                         </li>
                             ))}
                     </ul>

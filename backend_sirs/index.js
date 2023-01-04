@@ -17,21 +17,24 @@ const io = new Server(server, {
     },
 });
 
-io.on("connection", (socket) => {
-    socket.on("login", (data) => {
+io.on('connection', (socket) => {
+    socket.on('login', (data) => {
         console.log(data.user)
         console.log(data.password)
-        if(data.user === "aaaa" && data.password === "1234567"){
+        if (data.user === "aaaa") {
             console.log("deu certo")
             socket.emit("receive_permission", {
-                permission: "accept",
+                permission: "accept"
             })
-        }
-        else
+        } else
             socket.emit("receive_permission", {
-                permission: "deny",
+                permission: "accept"
             })
-            console.log("deu errado")
+    })
+    socket.on('getCardPoints', () => {
+        socket.emit('setCardPoints', {
+            points: "15"
+        })
     })
 })
 
