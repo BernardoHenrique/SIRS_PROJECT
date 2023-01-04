@@ -1,6 +1,7 @@
 import {React, useEffect, useState} from "react";
 import { useParams } from "react-router-dom";
 import {
+    HvBanner,
     HvButton,
     HvCheckBox,
     HvContainer,
@@ -14,11 +15,16 @@ export const RestaurantDetails = () => {
     const { name } = useParams();
     const [numberPeople, setPeople] = useState();
     const [showSuccess, setSuccess] = useState(false);
-    const [cardPoints, setCardPoints] = useState(0);
+    const [cardPoints, setCardPoints] = useState(25);
     const [useDiscount, setDiscount] = useState(false);
     const [date, setDate] = useState(false);
     const [time, setTime] = useState(false);
-    const [card, setCard] = useState("");
+    const [cardNumber, setCardNumber] = useState("");
+    const [ownersName, setOwnersName] = useState("");
+    const [validity, setValidity] = useState("");
+    const [code, setCode] = useState("");
+    const [hasCard, setHasCard] = useState(false);
+    const [openBanner, setOpenBanner] = useState(false);
     const socket = io.connect('https://localhost:3001');
 
     const validationMessages = {
@@ -27,12 +33,17 @@ export const RestaurantDetails = () => {
         typeMismatchError: "Value is not a number",
     };
 
-    useEffect(() => {
+    /* useEffect(() => {
         socket.emit('getCardPoints');
         socket.on('setCardPoints', (data) => {
             setCardPoints(data.points);
         });
+        socket.emit('getCard');
+        socket.on('setCard', (data) => {
+            setHasCard(data.card)
+        })
     }, []);
+    */
 
     const validateEntry = () => {
         return !isNaN(numberPeople) && numberPeople > 0 && date && time;
@@ -46,8 +57,22 @@ export const RestaurantDetails = () => {
     }
 
     const updateCardPoints = () => {
-        if(useDiscount && cardPoints >= 10)
-            setCardPoints(cardPoints - 10)
+        if(useDiscount && cardPoints >= 10) {
+            setCardPoints(cardPoints - 10);
+            setDiscount(false);
+        }
+    }
+
+    const updateCard = () => {
+        if(!hasCard){
+            socket.emit('updateCard', {
+                cardNumber,
+                ownersName,
+                validity,
+                code
+            })
+            setHasCard(true);
+        }
     }
 
     const sendBooking = () => {
@@ -57,7 +82,7 @@ export const RestaurantDetails = () => {
             numberPeople: numberPeople,
             date: date,
             time: time,
-            card: card,
+            card: cardNumber,
         })
     }
 
@@ -93,15 +118,26 @@ export const RestaurantDetails = () => {
             </HvButton>
             <div>
                 <HvDialog open={showSuccess} onClose={() => setSuccess(false)} aria-label="Create a new post">
-                    <HvDialogTitle>Payment details</HvDialogTitle>
                     <HvDialogContent style={{ width: 500 }}>
-                        <form id="dialog-form" >
-                            <HvInput required name="title" label="Title" placeholder="Enter text" onChange={(event, value) => setCard(value)} />
-                            <br />
-                        </form>
+                        {!hasCard ?
+                            (
+                                <form id="form" >
+                                    <HvDialogTitle>Payment details</HvDialogTitle>
+                                    <h2>You don't have any card associated</h2>
+                                    <HvInput required name="CardNumber" label="Card number" placeholder="Insert card number" onChange={(event, value) => setCardNumber(value)} />
+                                    <br />
+                                    <HvInput required name="Validity" label="Validity date" placeholder="Insert validity date" onChange={(event, value) => setValidity(value)} />
+                                    <br />
+                                    <HvInput required name="Owner Name" label="Owner Name" placeholder="Insert owner's name" onChange={(event, value) => setOwnersName(value)} />
+                                    <br />
+                                    <HvInput required name="3 digits code" label="3 digits code" placeholder="Insert 3 digits code" onChange={(event, value) => setCode(value)} />
+                                    <br />
+                            </form>) : (
+                                <HvDialogTitle>Do you want to pay with your registered card?</HvDialogTitle>
+                            )}
                     </HvDialogContent>
                     <HvDialogActions>
-                        <HvButton type="submit" form="dialog-form" category="ghost" onClose={() => {setSuccess(false); sendBooking(); updateCardPoints()}}>
+                        <HvButton type="submit" form="dialog-form" category="ghost" onClick={() => {setSuccess(false); sendBooking(); updateCardPoints(); updateCard(); setOpenBanner(true)}}>
                             Submit
                         </HvButton>
                         <HvButton id="cancel" category="ghost" onClick={() => setSuccess(false)}>
@@ -110,6 +146,7 @@ export const RestaurantDetails = () => {
                     </HvDialogActions>
                 </HvDialog>
             </div>
+            <HvBanner open={openBanner} variant="success" showIcon label="Reservation completed" onClose={() => setOpenBanner(false)}/>
         </HvContainer>
     );
 }
