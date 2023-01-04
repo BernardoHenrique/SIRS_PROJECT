@@ -237,14 +237,14 @@ public class SecureClient {
 				JsonObject infoJson = JsonParser.parseString("{}").getAsJsonObject();
 				infoJson.addProperty("token", token.toString());
 				requestJsonWhile.add("info", infoJson);
-				String restaurant = "...";
-				requestJsonWhile.addProperty("restaurant", restaurant);
-				String numberPeople = "...";
+				String balance = "...";
+				requestJsonWhile.addProperty("balance", balance);
+				/*String numberPeople = "...";
 				requestJsonWhile.addProperty("numberPeople", numberPeople);
 				String date = "...";
 				requestJsonWhile.addProperty("date", date);
 				String time = "...";
-				requestJsonWhile.addProperty("time", time);
+				requestJsonWhile.addProperty("time", time);*/
 			}
 
 			String plainTextWhile = requestJsonWhile.toString();
