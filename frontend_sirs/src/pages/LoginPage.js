@@ -19,10 +19,13 @@ export const LoginPage = () => {
 
     const validateEntries = () => {
         console.log(userName)
+        localStorage.setItem("userName",  userName)
+        localStorage.setItem("password",  password)
         socket.emit('login', {
-            user: { userName },
-            password: { password },
+            user: userName ,
+            password: password ,
         });
+        console.log(localStorage.getItem("userName"))
     }
 
     useEffect(() => {

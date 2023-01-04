@@ -18,6 +18,7 @@ export const RestaurantDetails = () => {
     const [useDiscount, setDiscount] = useState(false);
     const [date, setDate] = useState(false);
     const [time, setTime] = useState(false);
+    const [card, setCard] = useState("");
     const socket = io.connect('https://localhost:3001');
 
     const validationMessages = {
@@ -45,8 +46,19 @@ export const RestaurantDetails = () => {
     }
 
     const updateCardPoints = () => {
-      if(useDiscount && cardPoints >= 10)
-          setCardPoints(cardPoints - 10)
+        if(useDiscount && cardPoints >= 10)
+            setCardPoints(cardPoints - 10)
+    }
+
+    const sendBooking = () => {
+        socket.emit('sendBooking', {
+            user: localStorage.getItem("user"),
+            restaurant: name,
+            numberPeople: numberPeople,
+            date: date,
+            time: time,
+            card: card,
+        })
     }
 
         return (
@@ -76,26 +88,28 @@ export const RestaurantDetails = () => {
             <br />
             <HvCheckBox disabled={cardPoints < 10} checked={useDiscount} onClick={() => setDiscount(!useDiscount)} label="Use Card points" />
             <h3>Price {calcPrice()}€</h3>
-            <HvButton onClick={() => {setSuccess(true); updateCardPoints()}} disabled={!validateEntry()} category="primary">
+            <HvButton onClick={() => setSuccess(true)} disabled={!validateEntry()} category="primary">
                 Accept
             </HvButton>
-            <HvDialog
-                disableBackdropClick
-                open={showSuccess}
-                onClose={() => {setSuccess(false); setDiscount(false)}}
-                id="dialog"
-                firstFocusable="dialog-close"
-            >
-                <HvDialogTitle variant="info">Success</HvDialogTitle>
-                <HvDialogContent indentContent>
-                    Reservation Completed
-                </HvDialogContent>
-                <HvDialogActions>
-                    <HvButton id="cancel" category="ghost" onClick={() => {setSuccess(false); setDiscount(false)}}>
-                        Close
-                    </HvButton>
-                </HvDialogActions>
-            </HvDialog>
+            <div>
+                <HvDialog open={showSuccess} onClose={() => setSuccess(false)} aria-label="Create a new post">
+                    <HvDialogTitle>Payment details</HvDialogTitle>
+                    <HvDialogContent style={{ width: 500 }}>
+                        <form id="dialog-form" >
+                            <HvInput required name="title" label="Title" placeholder="Enter text" onChange={(event, value) => setCard(value)} />
+                            <br />
+                        </form>
+                    </HvDialogContent>
+                    <HvDialogActions>
+                        <HvButton type="submit" form="dialog-form" category="ghost" onClose={() => {setSuccess(false); sendBooking(); updateCardPoints()}}>
+                            Submit
+                        </HvButton>
+                        <HvButton id="cancel" category="ghost" onClick={() => setSuccess(false)}>
+                            Cancel
+                        </HvButton>
+                    </HvDialogActions>
+                </HvDialog>
+            </div>
         </HvContainer>
     );
 }
