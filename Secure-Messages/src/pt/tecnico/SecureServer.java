@@ -245,6 +245,7 @@ public class SecureServer {
 				responseJson.add("info", infoJson);
 				String bodyText = "Connection established";
 				responseJson.addProperty("body", bodyText);
+				responseJson.addProperty("endpoint", "http://192.168.1.1:3000");
 		}
 
 		//Encrypt data with secret key
