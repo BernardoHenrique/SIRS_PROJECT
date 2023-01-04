@@ -128,17 +128,17 @@ public class SecureServer {
 
 		int port = 5432;
 		String database = "thecork";
-		String username = "t048";
+		String username = "t48";
 		String password = "1234";
 
-		String url = "jdbc:postgresql://localhost" + ":" + port + "/" + database;
+		String url = "jdbc:postgresql://192.168.2.4" + ":" + port + "/" + database;
 
 		//192.168.2.4
 
 		try (Connection conn = DriverManager.getConnection(url, username, password)) {
 			System.out.println("Connected to the PostgreSQL server successfully.");
 		} catch (Exception e) {
-			System.out.println("Failed to connect to database");
+			System.out.println(e);
 		}
 	}
 
@@ -174,14 +174,19 @@ public class SecureServer {
 
 		//Parse arguments and initialize variables
 		final int port = Integer.parseInt(args[0]);
+		final int port2 = Integer.parseInt(args[1]);
 
-		final String keyPath = args[1];
+		final String keyPath = args[2];
 
 		byte[] bufRSA = new byte[BUFFER_SIZE];
 		byte[] bufAES = new byte[BUFFER_SIZE];
 
+
+		//Estabelecer ligacao com server
+
 		//Create server socket
 		DatagramSocket socket = new DatagramSocket(port);		
+		DatagramSocket socket1 = new DatagramSocket(port2);
 
 		DatagramPacket clientPacketAES = new DatagramPacket(bufAES, bufAES.length);
 		DatagramPacket clientPacketRSA = new DatagramPacket(bufRSA, bufRSA.length);
@@ -245,7 +250,7 @@ public class SecureServer {
 				responseJson.add("info", infoJson);
 				String bodyText = "Connection established";
 				responseJson.addProperty("body", bodyText);
-				responseJson.addProperty("endpoint", "http://192.168.1.1:3000");
+				//responseJson.addProperty("endpoint", "http://192.168.1.1:3000");
 		}
 
 		//Encrypt data with secret key
@@ -301,15 +306,15 @@ public class SecureServer {
 			}
 
 			// Parse JSON and extract arguments
-			String restaurant = null, date = null, time = null, tokenRcvd = null, numberPeople = null;
+			String balance = null, date = null, time = null, tokenRcvd = null, numberPeople = null;
 			requestJson = JsonParser.parseString(decryptedText).getAsJsonObject();
 			{
 				JsonObject infoJsonWhile = requestJson.getAsJsonObject("info");
 				tokenRcvd = infoJsonWhile.get("token").getAsString();
-				restaurant = requestJson.get("restaurant").getAsString();
-				numberPeople = requestJson.get("numberPeople").getAsString();
+				balance = requestJson.get("balance").getAsString();
+				/*numberPeople = requestJson.get("numberPeople").getAsString();
 				date = requestJson.get("date").getAsString();
-				time = requestJson.get("time").getAsString();
+				time = requestJson.get("time").getAsString();*/
 			}
 	
 			//Verificação do hmac de modo a verificar integridade
@@ -335,6 +340,10 @@ public class SecureServer {
 
 			// -------------------------------------------------- Send responses ------------------------------------------
 
+
+			//Wait por pedido do server 
+
+
 			//Check fressness of the message
 			if((token + 1) == Integer.parseInt(tokenRcvd)){
 				token = Integer.parseInt(tokenRcvd);
@@ -346,13 +355,15 @@ public class SecureServer {
 
 				token++;
 
+				//Ver quanto dinheiro foi gasto e meter numa variavel para enviar
+
 				// Create response message
 				JsonObject responseJsonWhile = JsonParser.parseString("{}").getAsJsonObject();
 				{
 					JsonObject infoJson = JsonParser.parseString("{}").getAsJsonObject();
 					infoJson.addProperty("token", token.toString());
 					responseJsonWhile.add("info", infoJson);
-					String bodyText = "Table reservation succeded";
+					String bodyText = "Withdraw:";
 					responseJsonWhile.addProperty("body", bodyText);
 				}
 
