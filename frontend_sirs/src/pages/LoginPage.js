@@ -24,7 +24,11 @@ export const LoginPage = () => {
 
     useEffect(() => {
         socket.on("receive_permission", (data) => {
-            setVerified(data.permission)
+            console.log(data);
+            if(data.permission === "accept")
+                setVerified(true)
+            else
+                setVerified(false)
         })
     }, [socket]);
     
