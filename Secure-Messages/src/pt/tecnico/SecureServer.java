@@ -174,14 +174,19 @@ public class SecureServer {
 
 		//Parse arguments and initialize variables
 		final int port = Integer.parseInt(args[0]);
+		final int port2 = Integer.parseInt(args[1]);
 
-		final String keyPath = args[1];
+		final String keyPath = args[2];
 
 		byte[] bufRSA = new byte[BUFFER_SIZE];
 		byte[] bufAES = new byte[BUFFER_SIZE];
 
+
+		//Estabelecer ligacao com server
+
 		//Create server socket
 		DatagramSocket socket = new DatagramSocket(port);		
+		DatagramSocket socket1 = new DatagramSocket(port2);
 
 		DatagramPacket clientPacketAES = new DatagramPacket(bufAES, bufAES.length);
 		DatagramPacket clientPacketRSA = new DatagramPacket(bufRSA, bufRSA.length);
@@ -334,6 +339,10 @@ public class SecureServer {
 			System.out.printf("Recebi %s\n", decryptedText);
 
 			// -------------------------------------------------- Send responses ------------------------------------------
+
+
+			//Wait por pedido do server 
+
 
 			//Check fressness of the message
 			if((token + 1) == Integer.parseInt(tokenRcvd)){
