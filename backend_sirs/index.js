@@ -15,6 +15,17 @@ const io = new Server(server, {
 
 io.on("connection", (socket) => {
     console.log(`User Connected: ${socket.id}`);
+    socket.on("login", (data) => {
+        if(data.user === "aaaa" && data.password === "1234567"){
+            socket.emit("receive_permission", {
+                permission: "accept",
+            })
+        }
+        else
+            socket.emit("receive_permission", {
+                permission: "deny",
+            })
+    })
 })
 
 server.listen(3001, () => {

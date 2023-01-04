@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import {HvButton, HvContainer, HvInput} from "@hitachivantara/uikit-react-core"
 import {Link} from "react-router-dom";
 import io from 'socket.io-client';
@@ -18,15 +18,16 @@ export const LoginPage = () => {
         });
         socket.emit('message', {
             cmd: 'login',
-            user: {userName},
-            password: {password},
-        });
-        socket.on('message', data => {
-            console.log(data.response); // 'Hello, client!'
-            setVerified(data.response);
+            user: { userName },
+            password: { password },
         });
     }
 
+    useEffect(() => {
+        socket.on("receive_permission", (data) => {
+            setVerified(data.permission)
+        })
+    }, [socket]);
     
     const validationMessages = {
         error: "Wrong password",
