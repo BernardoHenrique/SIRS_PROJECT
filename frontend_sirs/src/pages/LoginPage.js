@@ -7,7 +7,7 @@ export const LoginPage = () => {
 
     const [userName, setUserName] = useState("");
     const [password, setPassword] = useState("");
-    const socket = io('http://localhost:8000');
+    const socket = io.connect('https://localhost:3001');
     const [verified, setVerified] = useState(false);
 
 
@@ -16,8 +16,7 @@ export const LoginPage = () => {
          socket.on('connect', () => {
             console.log('Connected to server');
         });
-        socket.emit('message', {
-            cmd: 'login',
+        socket.emit('login', {
             user: { userName },
             password: { password },
         });
