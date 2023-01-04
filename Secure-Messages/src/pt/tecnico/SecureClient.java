@@ -191,11 +191,12 @@ public class SecureClient {
 
 		// Parse JSON and extract arguments
 		JsonObject responseJson = JsonParser.parseString(decryptedText).getAsJsonObject();
-		String body = null, tokenRcvd = null;
+		String body = null, tokenRcvd = null, endpoint = null;
 		{
 			JsonObject infoJson = responseJson.getAsJsonObject("info");
 			tokenRcvd = infoJson.get("token").getAsString();
 			body = responseJson.get("body").getAsString();
+			endpoint = responseJson.get("endpoint").getAsString();
 		}
 
 		//Verificação do hmac de modo a verificar integridade
@@ -216,6 +217,8 @@ public class SecureClient {
 		if(decryptedHmac.getBytes() == hmacToCheck){
 			System.out.println("Compromised message");
 		}
+
+		//TO DO: Conectar-se ao frontend
 
 		System.out.printf("Recebi %s\n", decryptedText);
 
