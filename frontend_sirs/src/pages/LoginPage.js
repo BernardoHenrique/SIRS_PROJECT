@@ -3,40 +3,35 @@ import {
     HvButton,
     HvContainer,
     HvDialog, HvDialogActions,
-    HvDialogContent,
     HvDialogTitle,
     HvInput
 } from "@hitachivantara/uikit-react-core"
+import axios from "axios";
 import {Link} from "react-router-dom";
-import io from 'socket.io-client';
 
 export const LoginPage = () => {
 
     const [userName, setUserName] = useState("");
     const [password, setPassword] = useState("");
-    const socket = io.connect('https://localhost:3001');
     const [verified, setVerified] = useState(false);
 
     const validateEntries = () => {
-        console.log(userName)
         localStorage.setItem("userName",  userName)
         localStorage.setItem("password",  password)
-        socket.emit('login', {
-            user: userName ,
-            password: password ,
-        });
+        axios.get(process.env.API + "/login", {
+            params: {
+                user: userName,
+                password: password
+            }
+        })
+            .then(response => {
+                console.log(response.data);
+                setVerified(response.data);
+            })
+            .catch(error => console.log(error))
         console.log(localStorage.getItem("userName"))
     }
 
-    useEffect(() => {
-        socket.on('receive_permission', (data) => {
-            console.log(data);
-            if(data.permission === "accept")
-                setVerified(true)
-            else
-                setVerified(false)
-        })
-    }, [socket]);
     
     const validationMessages = {
         error: "Wrong password",
@@ -69,7 +64,7 @@ export const LoginPage = () => {
                 validationMessages={validationMessages}
             />
             <br/>
-                <HvButton category="primary" onClick={() => validateEntries()}>
+                <HvButton category="primary" onClick={validateEntries}>
                     Confirm
                 </HvButton>
             <div>
