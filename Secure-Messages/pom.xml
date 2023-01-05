@@ -76,7 +76,9 @@
         
 	<build>
 		<!-- change source code location -->
-		<sourceDirectory>src/</sourceDirectory>
+		<sourceDirectory>
+			src/
+		</sourceDirectory>
 
 		<plugins>
 			<!--  Plugin used to compile the sources of your project. Java 9 requires at least version 3.7.0 to properly handle modules. -->
@@ -110,6 +112,11 @@
 						or in command line with -Dexec.args="arg0 arg1 arg2" -->
 					</arguments>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>1.2.7.RELEASE</version>
 			</plugin>
 		</plugins>
 	</build>

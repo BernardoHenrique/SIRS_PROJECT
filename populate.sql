@@ -1,17 +1,17 @@
 drop table if exists users_login;
 drop table if exists user_profile;
-drop table bookings;
+
+create table users_login
+    (nome varchar(80) not null,
+     password varchar(80) not null unique);
 
 create table user_profile
-    (nome varchar(80) not null unique,
-     cardPoints numeric(20,0),
-     3digit numeric(20,0),
-     experationDate varchar(80),
-     creditCardNumber numeric(20,0));
+    (nome varchar(80) not null,
+     cardPoints numeric(20,0) not null,
+     3digit numeric(20,0) not null,
+     experationDate varchar(80) not null,
+     creditCardNumber numeric(20,0) not null unique);
 
-create table bookings
-    (namePerson varchar(80) not null,
-     NameRestaurant varchar(80) not null,
-     nrPeople numeric(20,0),
-     id varchar(80) not null
-     creditCardNumber numeric(20,0));
+insert into users_login values ('Ricardo Chaves', 'mastersecurity');
+insert into users_login values ('Miguel Pardal', 'securitymaster');
+insert into users_login values ('David Matos', 'sirsMVP')
