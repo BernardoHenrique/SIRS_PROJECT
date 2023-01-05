@@ -174,9 +174,8 @@ public class SecureServer {
 
 		//Parse arguments and initialize variables
 		final int port = Integer.parseInt(args[0]);
-		final int port2 = Integer.parseInt(args[1]);
 
-		final String keyPath = args[2];
+		final String keyPath = args[1];
 
 		byte[] bufRSA = new byte[BUFFER_SIZE];
 		byte[] bufAES = new byte[BUFFER_SIZE];
@@ -186,7 +185,6 @@ public class SecureServer {
 
 		//Create server socket
 		DatagramSocket socket = new DatagramSocket(port);		
-		DatagramSocket socket1 = new DatagramSocket(port2);
 
 		DatagramPacket clientPacketAES = new DatagramPacket(bufAES, bufAES.length);
 		DatagramPacket clientPacketRSA = new DatagramPacket(bufRSA, bufRSA.length);
@@ -250,7 +248,6 @@ public class SecureServer {
 				responseJson.add("info", infoJson);
 				String bodyText = "Connection established";
 				responseJson.addProperty("body", bodyText);
-				//responseJson.addProperty("endpoint", "http://192.168.1.1:3000");
 		}
 
 		//Encrypt data with secret key
@@ -279,7 +276,64 @@ public class SecureServer {
 			clientPacketRSA.getAddress(), clientPacketRSA.getPort());
 		socket.send(serverPacket);
 
+		System.out.printf("Enviei %s\n", toSendResponse.toString());
+
 		while (true) {
+			// -------------------------------------------------- Send responses ------------------------------------------
+
+
+			//Wait por get/post da API
+
+
+				//Process information received and query it to the database
+
+				//Sendo query de acordo com pedido recebido
+				//SendQuery();
+
+				token++;
+
+				//Ver quanto dinheiro foi gasto e meter numa variavel para enviar
+
+				// Create response message
+				JsonObject responseJsonWhile = JsonParser.parseString("{}").getAsJsonObject();
+				{
+					JsonObject infoJson = JsonParser.parseString("{}").getAsJsonObject();
+					infoJson.addProperty("token", token.toString());
+					responseJsonWhile.add("info", infoJson);
+					String bodyText = "Withdraw:";
+					responseJsonWhile.addProperty("body", bodyText);
+				}
+
+				//Encrypt response message with secret key
+				try{
+					serverData = do_Encryption(responseJsonWhile.toString(), secretKey);
+				} catch(Exception e){
+					System.out.println("Error encrypting with secret key");
+				}
+
+				//Criar Hmac da mensagem que nos irá garantir integridade
+				try{
+					hmac = do_Encryption(digest(responseJsonWhile.toString().getBytes(UTF_8), "SHA3-256").toString(), secretKey);
+				} catch (Exception e){
+					System.out.println(e);
+				}
+
+				//Criar mensagem para enviar ao cliente
+				toSendResponse = JsonParser.parseString("{}").getAsJsonObject();
+				{
+					toSendResponse.addProperty("payload", Base64.getEncoder().encodeToString(serverData));
+					toSendResponse.addProperty("hmac", Base64.getEncoder().encodeToString(hmac));
+				}
+
+				System.out.printf("Hmac %s\n", Base64.getEncoder().encodeToString(hmac));
+
+				System.out.printf("Enviei %s\n", responseJsonWhile.toString());
+
+				// Send response
+				DatagramPacket serverPacketWhile = new DatagramPacket(toSendResponse.toString().getBytes(),
+					toSendResponse.toString().getBytes().length, clientPacketRSA.getAddress(), clientPacketRSA.getPort());
+				socket.send(serverPacketWhile);
+
 			// -------------------------------------------------- Receive requests ------------------------------------------
 			// Receive requests from client
 
@@ -338,64 +392,9 @@ public class SecureServer {
 
 			System.out.printf("Recebi %s\n", decryptedText);
 
-			// -------------------------------------------------- Send responses ------------------------------------------
-
-
-			//Wait por pedido do server 
-
-
 			//Check fressness of the message
 			if((token + 1) == Integer.parseInt(tokenRcvd)){
 				token = Integer.parseInt(tokenRcvd);
-
-				//Process information received and query it to the database
-
-				//Sendo query de acordo com pedido recebido
-				//SendQuery();
-
-				token++;
-
-				//Ver quanto dinheiro foi gasto e meter numa variavel para enviar
-
-				// Create response message
-				JsonObject responseJsonWhile = JsonParser.parseString("{}").getAsJsonObject();
-				{
-					JsonObject infoJson = JsonParser.parseString("{}").getAsJsonObject();
-					infoJson.addProperty("token", token.toString());
-					responseJsonWhile.add("info", infoJson);
-					String bodyText = "Withdraw:";
-					responseJsonWhile.addProperty("body", bodyText);
-				}
-
-				//Encrypt response message with secret key
-				try{
-					serverData = do_Encryption(responseJsonWhile.toString(), secretKey);
-				} catch(Exception e){
-					System.out.println("Error encrypting with secret key");
-				}
-
-				//Criar Hmac da mensagem que nos irá garantir integridade
-				try{
-					hmac = do_Encryption(digest(responseJsonWhile.toString().getBytes(UTF_8), "SHA3-256").toString(), secretKey);
-				} catch (Exception e){
-					System.out.println(e);
-				}
-
-				//Criar mensagem para enviar ao cliente
-				toSendResponse = JsonParser.parseString("{}").getAsJsonObject();
-				{
-					toSendResponse.addProperty("payload", Base64.getEncoder().encodeToString(serverData));
-					toSendResponse.addProperty("hmac", Base64.getEncoder().encodeToString(hmac));
-				}
-
-				System.out.printf("Hmac %s\n", Base64.getEncoder().encodeToString(hmac));
-
-				System.out.printf("Enviei %s\n", responseJsonWhile.toString());
-
-				// Send response
-				DatagramPacket serverPacketWhile = new DatagramPacket(toSendResponse.toString().getBytes(),
-					toSendResponse.toString().getBytes().length, clientPacketAES.getAddress(), clientPacketAES.getPort());
-				socket.send(serverPacketWhile);
 			}
 			else{
 				System.out.println("Not fresh request");

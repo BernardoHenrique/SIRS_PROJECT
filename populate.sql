@@ -1,5 +1,5 @@
-drop table users_login cascade;
-drop table user_profile cascade;
+drop table if exists users_login;
+drop table if exists user_profile;
 drop table bookings;
 
 create table user_profile
