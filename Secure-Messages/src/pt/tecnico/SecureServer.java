@@ -336,75 +336,77 @@ public class SecureServer {
 
 			// -------------------------------------------------- Receive requests ------------------------------------------
 			// Receive requests from client
+			while(true){
 
-			socket.receive(clientPacketAES);
+				socket.receive(clientPacketAES);
 
-			byte[] rcvdMsgWhile = new byte[clientPacketAES.getLength()];
+				byte[] rcvdMsgWhile = new byte[clientPacketAES.getLength()];
 
-			System.arraycopy(clientPacketAES.getData(), 0, rcvdMsgWhile, 0, clientPacketAES.getLength());
-	
-			JsonObject receivedWhile = JsonParser.parseString(new String(rcvdMsgWhile)).getAsJsonObject();
-			String hmacWhile = null, receivedFromJsonWhile = null;
-			{
-				hmacWhile = receivedWhile.get("hmac").getAsString();
-				receivedFromJsonWhile = receivedWhile.get("payload").getAsString();
-			}
-	
-			byte[] receivedFromJsonBytes = Base64.getDecoder().decode(receivedFromJsonWhile);
+				System.arraycopy(clientPacketAES.getData(), 0, rcvdMsgWhile, 0, clientPacketAES.getLength());
+		
+				JsonObject receivedWhile = JsonParser.parseString(new String(rcvdMsgWhile)).getAsJsonObject();
+				String hmacWhile = null, receivedFromJsonWhile = null;
+				{
+					hmacWhile = receivedWhile.get("hmac").getAsString();
+					receivedFromJsonWhile = receivedWhile.get("payload").getAsString();
+				}
+		
+				byte[] receivedFromJsonBytes = Base64.getDecoder().decode(receivedFromJsonWhile);
 
-			//Decrypt with secret key
-			try{
-				decryptedText = do_Decryption(receivedFromJsonBytes, secretKey);
-			} catch(Exception e){
-				System.out.println(e);
-			}
+				//Decrypt with secret key
+				try{
+					decryptedText = do_Decryption(receivedFromJsonBytes, secretKey);
+				} catch(Exception e){
+					System.out.println(e);
+				}
 
-			// Parse JSON and extract arguments
-			String balance = null, date = null, time = null, tokenRcvd = null, numberPeople = null;
-			requestJson = JsonParser.parseString(decryptedText).getAsJsonObject();
-			{
-				JsonObject infoJsonWhile = requestJson.getAsJsonObject("info");
-				tokenRcvd = infoJsonWhile.get("token").getAsString();
-				balance = requestJson.get("balance").getAsString();
-				/*numberPeople = requestJson.get("numberPeople").getAsString();
-				date = requestJson.get("date").getAsString();
-				time = requestJson.get("time").getAsString();*/
-			}
-	
-			//Verificação do hmac de modo a verificar integridade
-	
-			byte[] hmacBytes = Base64.getDecoder().decode(hmacWhile);
-	
-			try{
-				decryptedHmac = do_Decryption(hmacBytes, secretKey);
-			} catch(Exception e){
-				System.out.println(e);
-			}
-	
-			try{
-				hmacToCheck = digest(decryptedText.getBytes(UTF_8), "SHA3-256");
-			} catch (Exception e){
-				System.out.println(e);
-			}
-			if(decryptedHmac.getBytes() == hmacToCheck){
-				System.out.println("Compromised message");
-			}
+				// Parse JSON and extract arguments
+				String balance = null, date = null, time = null, tokenRcvd = null, numberPeople = null;
+				requestJson = JsonParser.parseString(decryptedText).getAsJsonObject();
+				{
+					JsonObject infoJsonWhile = requestJson.getAsJsonObject("info");
+					tokenRcvd = infoJsonWhile.get("token").getAsString();
+					balance = requestJson.get("balance").getAsString();
+					/*numberPeople = requestJson.get("numberPeople").getAsString();
+					date = requestJson.get("date").getAsString();
+					time = requestJson.get("time").getAsString();*/
+				}
+		
+				//Verificação do hmac de modo a verificar integridade
+		
+				byte[] hmacBytes = Base64.getDecoder().decode(hmacWhile);
+		
+				try{
+					decryptedHmac = do_Decryption(hmacBytes, secretKey);
+				} catch(Exception e){
+					System.out.println(e);
+				}
+		
+				try{
+					hmacToCheck = digest(decryptedText.getBytes(UTF_8), "SHA3-256");
+				} catch (Exception e){
+					System.out.println(e);
+				}
+				if(decryptedHmac.getBytes() == hmacToCheck){
+					System.out.println("Compromised message");
+				}
 
-			System.out.printf("Recebi %s\n", decryptedText);
+				System.out.printf("Recebi %s\n", decryptedText);
 
-			//Check fressness of the message
-			if((token + 1) == Integer.parseInt(tokenRcvd)){
-				token = Integer.parseInt(tokenRcvd);
-			}
-			else{
-				System.out.println("Not fresh request");
-				break;
+				//Check fressness of the message
+				if((token + 1) == Integer.parseInt(tokenRcvd)){
+					token = Integer.parseInt(tokenRcvd);
+					break;
+				}
+				else{
+					System.out.println("Not fresh request");
+				}
 			}
 		}
-		try{
+		/*try{
 			con.close();
 		}catch (Exception e){
 			System.out.println("Can't close database");
-		}
+		}*/
 	}
 }
