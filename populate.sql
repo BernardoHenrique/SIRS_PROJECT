@@ -7,10 +7,9 @@ create table users_login
 
 create table user_profile
     (nome varchar(80) not null,
-     cardPoints numeric(20,0) not null,
+     creditCardNumber numeric(20,0) not null unique,
      threedigit numeric(20,0) not null,
-     experationDate varchar(80) not null,
-     creditCardNumber numeric(20,0) not null unique);
+     experationDate varchar(80) not null);
 
 insert into users_login values ('Ricardo Chaves', 'mastersecurity');
 insert into users_login values ('Miguel Pardal', 'securitymaster');

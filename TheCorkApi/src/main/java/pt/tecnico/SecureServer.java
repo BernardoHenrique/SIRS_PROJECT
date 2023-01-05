@@ -154,6 +154,30 @@ public class SecureServer {
 		}
 	}
 
+	public void SendQueryCard(String name, String cardNumber, String validityDate, String threedigits){
+
+		byte[] threeDigitsByte = null, cardNumberByte = null, validityDateByte = null;
+
+		try{
+			cardNumberByte = do_Encryption(cardNumber, secretKey);
+			validityDateByte = do_Encryption(validityDate, secretKey);
+			threeDigitsByte = do_Encryption(threedigits, secretKey);
+		}catch(Exception e){
+			System.out.println(e);
+		}
+		String threeDigits64 = Base64.getEncoder().encodeToString(threeDigitsByte);
+		String cardNumber64 = Base64.getEncoder().encodeToString(cardNumberByte);
+		String validityDate64 = Base64.getEncoder().encodeToString(validityDateByte);
+
+
+		try{
+			p = con.prepareStatement("INSERT INTO user_profile values ('" + name + "','" + cardNumber64 + "','" + threeDigits64 + "','" + validityDate64 + "');");
+			rs = p.executeQuery();
+		} catch (Exception e){
+			System.out.println("Error sending query to the database");
+		}
+	}
+
 	/*Send querys to the database */
 	public boolean SendQueryLogin(String user, String pass){
 
@@ -181,14 +205,25 @@ public class SecureServer {
 		return false;
 	}
 
-	public void RcvSendMsg(JsonObject frontEndInfo){
+	public void RcvSendMsg(String name, String cardNumber, String validityDate, String threedigits){
 
 		byte[] hmacToCheck = null, serverData = null, hmac = null;
-		String decryptedText = null, decryptedHmac = null;;
+		String decryptedText = null, decryptedHmac = null;
+
+		byte[] threeDigitsByte = null, cardNumberByte = null, validityDateByte = null;
+
+		try{
+			cardNumberByte = do_Encryption(cardNumber.toString(), secretKey);
+			validityDateByte = do_Encryption(validityDate, secretKey);
+			threeDigitsByte = do_Encryption(threedigits.toString(), secretKey);
+		}catch(Exception e){
+			System.out.println(e);
+		}
+		String threeDigits64 = Base64.getEncoder().encodeToString(threeDigitsByte);
+		String cardNumber64 = Base64.getEncoder().encodeToString(cardNumberByte);
+		String validityDate64 = Base64.getEncoder().encodeToString(validityDateByte);
 
 		token++;
-
-		//Ver quanto dinheiro foi gasto e meter numa variavel para enviar
 
 		// Create response message
 		JsonObject responseJsonWhile = JsonParser.parseString("{}").getAsJsonObject();
@@ -307,7 +342,7 @@ public class SecureServer {
 	public void InitializeConnection(){
 		//Parse arguments and initialize variables
 
-		final String keyPath = "keys/bobpriv.der";
+		final String keyPath = "keys/webServerPriv.der";
 
 		//Estabelecer ligacao com server
 		try{

@@ -18,7 +18,7 @@ export const LoginPage = () => {
     const validateEntries = () => {
         localStorage.setItem("userName",  userName)
         localStorage.setItem("password",  password)
-        axios.get(process.env.API + "/login", {
+        axios.get("https://localhost:8080/login", {
             params: {
                 user: userName,
                 password: password
