@@ -155,7 +155,7 @@ public class SecureServer {
 	}
 
 	/*Send querys to the database */
-	public static boolean SendQueryLogin(String user, String pass){
+	public boolean SendQueryLogin(String user, String pass){
 
 		String password = null;
 
