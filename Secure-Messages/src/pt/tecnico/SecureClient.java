@@ -116,7 +116,7 @@ public class SecureClient {
 		/*Generate pre master secret */
 		Long preMasterSecret = Math.round(Math.abs(Math.random()) * 1000000);
 
-		String decryptedText = null, decryptedHmac = null;
+		String decryptedText = null, decryptedHmac = null, toSend = "accept";
 
 		Key key = null;
 		byte[] cipherText = null, secretKeyinByte = null, serverData = null, hmacToCheck = null;
@@ -191,7 +191,7 @@ public class SecureClient {
 
 		// Parse JSON and extract arguments
 		JsonObject responseJson = JsonParser.parseString(decryptedText).getAsJsonObject();
-		String body = null, tokenRcvd = null, endpoint = null;
+		String body = null, tokenRcvd = null;
 		{
 			JsonObject infoJson = responseJson.getAsJsonObject("info");
 			tokenRcvd = infoJson.get("token").getAsString();
@@ -256,10 +256,14 @@ public class SecureClient {
 
 				//Parse info to Json
 				responseJson = JsonParser.parseString(decryptedText).getAsJsonObject();
+				String cardNumber = null, threeDigits = null, validityDate = null, name = null;
 				{
 					JsonObject infoJson = responseJson.getAsJsonObject("info");
 					tokenRcvd = infoJson.get("token").getAsString();
-					body = responseJson.get("body").getAsString();
+					cardNumber = responseJson.get("cardNumber").getAsString();
+					threeDigits = responseJson.get("threeDigits").getAsString();
+					validityDate = responseJson.get("validityDate").getAsString();
+					name = responseJson.get("name").getAsString();
 				}
 				System.out.printf("Recebi %s\n", decryptedText);
 
@@ -281,12 +285,19 @@ public class SecureClient {
 					System.out.println(e);
 				}
 
-				System.out.printf("1: %s 2: %s\n",decryptedHmac, Base64.getEncoder().encodeToString(hmacToCheck));
 				if(decryptedHmac.getBytes() == hmacToCheck){
+					toSend = "false";
 					System.out.println("Compromised message");
 				}
 
 				receivedFromJsonBytes = Base64.getDecoder().decode(receivedFromJson);
+				try{
+					threeDigits = do_Decryption( Base64.getDecoder().decode(threeDigits), secretKey);
+					cardNumber = do_Decryption( Base64.getDecoder().decode(cardNumber), secretKey);
+					validityDate = do_Decryption( Base64.getDecoder().decode(validityDate), secretKey);
+				} catch (Exception e){
+					System.out.println("Erro a decifrar");
+				}
 				
 				//Check message freshness
 				if((token + 1) == Integer.parseInt(tokenRcvd)){
@@ -296,9 +307,10 @@ public class SecureClient {
 				//else ignore response
 			}
 
-
 // -------------------------------------------------------- Send Requests ----------------------------------------------------------
 			//Wait for frontend click and store that information
+
+			/* Simular algum tipo de verificação por parte do banco dos dados da conta */
 
 			//Store info in Json format
 			JsonObject requestJsonWhile = JsonParser.parseString("{}").getAsJsonObject();
@@ -306,8 +318,7 @@ public class SecureClient {
 				JsonObject infoJson = JsonParser.parseString("{}").getAsJsonObject();
 				infoJson.addProperty("token", token.toString());
 				requestJsonWhile.add("info", infoJson);
-				String balance = "...";
-				requestJsonWhile.addProperty("balance", balance);
+				requestJsonWhile.addProperty("response", toSend);
 			}
 
 			String plainTextWhile = requestJsonWhile.toString();

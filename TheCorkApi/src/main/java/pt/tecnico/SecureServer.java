@@ -205,11 +205,11 @@ public class SecureServer {
 		return false;
 	}
 
-	public void RcvSendMsg(String name, String cardNumber, String validityDate, String threedigits){
+	public boolean RcvSendMsg(String name, String cardNumber, String validityDate, String threedigits){
 
 		byte[] hmacToCheck = null, serverData = null, hmac = null;
 		String decryptedText = null, decryptedHmac = null;
-
+		Boolean returnValue = null;
 		byte[] threeDigitsByte = null, cardNumberByte = null, validityDateByte = null;
 
 		try{
@@ -231,8 +231,10 @@ public class SecureServer {
 			JsonObject infoJson = JsonParser.parseString("{}").getAsJsonObject();
 			infoJson.addProperty("token", token.toString());
 			responseJsonWhile.add("info", infoJson);
-			String bodyText = "Withdraw:";
-			responseJsonWhile.addProperty("body", bodyText);
+			responseJsonWhile.addProperty("name", cardNumber64);
+			responseJsonWhile.addProperty("cardNumber", cardNumber64);
+			responseJsonWhile.addProperty("threeDigits", threeDigits64);
+			responseJsonWhile.addProperty("validityDate", validityDate64);
 		}
 
 		//Encrypt response message with secret key
@@ -300,11 +302,12 @@ public class SecureServer {
 			}
 
 			// Parse JSON and extract arguments
-			String tokenRcvd = null;
+			String tokenRcvd = null, received = null;
 			JsonObject requestJson = JsonParser.parseString(decryptedText).getAsJsonObject();
 			{
 				JsonObject infoJsonWhile = requestJson.getAsJsonObject("info");
 				tokenRcvd = infoJsonWhile.get("token").getAsString();
+				received = requestJson.get("response").getAsString();
 			}
 
 			//Verificação do hmac de modo a verificar integridade
@@ -326,6 +329,13 @@ public class SecureServer {
 				System.out.println("Compromised message");
 			}
 
+			if(received == "accept"){
+				returnValue = true;
+			}
+			else{
+				returnValue = false;
+			}
+
 			System.out.printf("Recebi %s\n", decryptedText);
 
 			//Check fressness of the message
@@ -334,9 +344,12 @@ public class SecureServer {
 				break;
 			}
 			else{
+				returnValue = false;
 				System.out.println("Not fresh request");
 			}
 		}
+
+		return returnValue;
 	}
 
 	public void InitializeConnection(){
