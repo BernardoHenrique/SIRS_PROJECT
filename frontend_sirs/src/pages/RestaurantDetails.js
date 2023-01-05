@@ -1,15 +1,19 @@
-import {React, useEffect, useState} from "react";
+import { React, useEffect, useState} from "react";
 import { useParams } from "react-router-dom";
 import {
     HvBanner,
     HvButton,
     HvCheckBox,
     HvContainer,
-    HvDatePicker, HvDialog, HvDialogActions, HvDialogContent, HvDialogTitle,
+    HvDatePicker,
+    HvDialog,
+    HvDialogActions,
+    HvDialogContent,
+    HvDialogTitle,
     HvInput,
     HvTimePicker
 } from "@hitachivantara/uikit-react-core";
-import io from "socket.io-client";
+import axios from "axios";
 
 export const RestaurantDetails = () => {
     const { name } = useParams();
@@ -25,7 +29,6 @@ export const RestaurantDetails = () => {
     const [code, setCode] = useState("");
     const [hasCard, setHasCard] = useState(false);
     const [openBanner, setOpenBanner] = useState(false);
-    const socket = io.connect('https://localhost:3001');
 
     const validationMessages = {
         requiredError: "The number is required",
@@ -33,17 +36,19 @@ export const RestaurantDetails = () => {
         typeMismatchError: "Value is not a number",
     };
 
-    /* useEffect(() => {
-        socket.emit('getCardPoints');
-        socket.on('setCardPoints', (data) => {
-            setCardPoints(data.points);
-        });
-        socket.emit('getCard');
-        socket.on('setCard', (data) => {
-            setHasCard(data.card)
-        })
+     useEffect(() => {
+         axios.get("https://localhost:8080/getCard", {
+             params: {
+                 name: localStorage.getItem("userName"),
+             }
+         })
+             .then(response => {
+                 console.log(response.data);
+                 setHasCard(response.data);
+             })
+             .catch(error => console.log(error))
     }, []);
-    */
+
 
     const validateEntry = () => {
         return !isNaN(numberPeople) && numberPeople > 0 && date && time;
@@ -65,17 +70,37 @@ export const RestaurantDetails = () => {
 
     const updateCard = () => {
         if(!hasCard){
-            socket.emit('updateCard', {
-                cardNumber,
-                ownersName,
-                validity,
-                code
+            axios.get("https://localhost:8080/updateCard", {
+                params: {
+                    card: cardNumber,
+                    name: ownersName,
+                    validity: validity,
+                    code: code
+                }
             })
+                .then(response => {
+                console.log(response.data);
+            })
+                .catch(error => console.log(error))
             setHasCard(true);
         }
     }
 
+    /*
     const sendBooking = () => {
+        axios.get("https://localhost:8080/booking", {
+            params: {
+                restaurant: name,
+                numberPeople: numberPeople,
+                date: date,
+                time: time,
+                card: cardNumber,
+            }
+        })
+            .then(response => {
+                console.log(response.data);
+            })
+            .catch(error => console.log(error))
         socket.emit('sendBooking', {
             user: localStorage.getItem("user"),
             restaurant: name,
@@ -84,7 +109,7 @@ export const RestaurantDetails = () => {
             time: time,
             card: cardNumber,
         })
-    }
+    }*/
 
         return (
         <HvContainer>
@@ -137,7 +162,7 @@ export const RestaurantDetails = () => {
                             )}
                     </HvDialogContent>
                     <HvDialogActions>
-                        <HvButton type="submit" form="dialog-form" category="ghost" onClick={() => {setSuccess(false); sendBooking(); updateCardPoints(); updateCard(); setOpenBanner(true)}}>
+                        <HvButton type="submit" form="dialog-form" category="ghost" onClick={() => {setSuccess(false); updateCardPoints(); updateCard(); setOpenBanner(true)}}>
                             Submit
                         </HvButton>
                         <HvButton id="cancel" category="ghost" onClick={() => setSuccess(false)}>
