@@ -37,7 +37,7 @@ export const RestaurantDetails = () => {
     };
 
      useEffect(() => {
-         axios.get("https://localhost:8080/getCard", {
+         axios.get("http://localhost:8080/getCard", {
              params: {
                  name: localStorage.getItem("userName"),
              }
