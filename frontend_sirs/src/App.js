@@ -10,23 +10,6 @@ import { HvProvider } from "@hitachivantara/uikit-react-core";
 function App() {
   return (
       <HvProvider>
-          <ul>
-            <li>
-            <Link to="/">
-                Home
-            </Link>
-                </li>
-              <li>
-              <Link to="/LoginPage">
-              Login
-            </Link>
-            </li>
-              <li>
-                  <Link to="/Restaurants">
-                      Restaurants List
-                  </Link>
-              </li>
-          </ul>
           <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/LoginPage" element={<LoginPage />}/>

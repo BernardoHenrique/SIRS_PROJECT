@@ -86,31 +86,6 @@ export const RestaurantDetails = () => {
         }
     }
 
-    /*
-    const sendBooking = () => {
-        axios.get("https://localhost:8080/booking", {
-            params: {
-                restaurant: name,
-                numberPeople: numberPeople,
-                date: date,
-                time: time,
-                card: cardNumber,
-            }
-        })
-            .then(response => {
-                console.log(response.data);
-            })
-            .catch(error => console.log(error))
-        socket.emit('sendBooking', {
-            user: localStorage.getItem("user"),
-            restaurant: name,
-            numberPeople: numberPeople,
-            date: date,
-            time: time,
-            card: cardNumber,
-        })
-    }*/
-
         return (
         <HvContainer>
             <h1>{ name } </h1>
