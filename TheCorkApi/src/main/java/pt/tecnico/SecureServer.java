@@ -171,7 +171,7 @@ public class SecureServer {
 
 
 		try{
-			p = conn.prepareStatement("INSERT INTO user_profile values ('" + name + "','" + cardNumber64 + "','" + threeDigits64 + "','" + validityDate64 + "');");
+			p = conn.prepareStatement("INSERT INTO user_profile values ('" + name + "','" + cardNumber64 + "','" + threeDigits64 + "','" + validityDate64 + "')");
 			rs = p.executeQuery();
 		} catch (Exception e){
 			System.out.println("Error sending query to the database");
@@ -352,7 +352,7 @@ public class SecureServer {
 	public void InitializeConnection(){
 		//Parse arguments and initialize variables
 
-		final String keyPath = "keys/webServerPriv.der";
+		final String keyPath = "src/main/java/pt/tecnico/keys/webServerPriv.der";
 
 		//Estabelecer ligacao com server
 		try{
