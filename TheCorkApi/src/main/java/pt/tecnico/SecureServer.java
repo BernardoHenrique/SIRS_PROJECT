@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -42,7 +41,7 @@ public class SecureServer {
 	private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
 	/* Database stuff */
-	static Connection con = null;
+	static Connection conn = null;
 	static PreparedStatement p = null;
 	static ResultSet rs = null;
 	//Create server socket
@@ -147,8 +146,9 @@ public class SecureServer {
 
 		//192.168.2.4
 
-		try (Connection conn = DriverManager.getConnection(url, username, password)) {
-			System.out.println("Connected to the PostgreSQL server successfully.");
+		try{
+			conn = DriverManager.getConnection(url, username, password);
+			System.out.println("Connected to the PostgreSQL server successfully., ");
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -171,7 +171,7 @@ public class SecureServer {
 
 
 		try{
-			p = con.prepareStatement("INSERT INTO user_profile values ('" + name + "','" + cardNumber64 + "','" + threeDigits64 + "','" + validityDate64 + "');");
+			p = conn.prepareStatement("INSERT INTO user_profile values ('" + name + "','" + cardNumber64 + "','" + threeDigits64 + "','" + validityDate64 + "');");
 			rs = p.executeQuery();
 		} catch (Exception e){
 			System.out.println("Error sending query to the database");
@@ -182,25 +182,22 @@ public class SecureServer {
 	public boolean SendQueryLogin(String user, String pass){
 
 		String password = null;
+		String name = null;
 
 		try{
-			p = con.prepareStatement("SELECT " + user + "FROM users_login;");
+			String query = "SELECT * FROM users_login";
+			p = conn.prepareStatement(query);
 			rs = p.executeQuery();
-			password = rs.getString("password");
-			/*while (rs.next())
+			while (rs.next())
 			{
-				int id = rs.getInt("cusid");
-				String name = rs.getString("cusname");
-				String email = rs.getString("email");
-				System.out.println(id + "\t\t" + name + 
-										"\t\t" + email);
-			}*/
+				name = rs.getString("nome");		
+				password = rs.getString("password");
+				if(pass.equals(password) && user.equals(name)){
+					return true;
+				}
+			}
 		} catch (Exception e){
-			System.out.println("Error sending query to the database");
-		}
-
-		if(password == pass){
-			return true;
+			System.out.println("Erro na query login");
 		}
 		return false;
 	}

@@ -12,10 +12,10 @@ public class TheCorkApiController {
 
     public TheCorkApiController(){
         _secureServer = new SecureServer();
-        _secureServer.InitializeDB();
         //_secureServer.InitializeConnection();
+        System.out.println("LIGA O SERVER");
+        _secureServer.InitializeDB();
     }
-
 
     @GetMapping("/login")
     public boolean login(@RequestParam(name="user", required=true) String user, @RequestParam(name="password", required=true) String pass) {
