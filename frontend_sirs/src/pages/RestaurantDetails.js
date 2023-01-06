@@ -70,7 +70,7 @@ export const RestaurantDetails = () => {
 
     const updateCard = () => {
         if(!hasCard){
-            axios.get("https://localhost:8080/updateCard", {
+            axios.get("http://localhost:8080/updateCard", {
                 params: {
                     card: cardNumber,
                     name: ownersName,

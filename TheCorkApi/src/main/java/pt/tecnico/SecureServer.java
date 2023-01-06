@@ -154,7 +154,7 @@ public class SecureServer {
 		}
 	}
 
-	public void SendQueryCard(String name, String cardNumber, String validityDate, String threedigits){
+	public void updateQueryCard(String name, String cardNumber, String validityDate, String threedigits){
 
 		byte[] threeDigitsByte = null, cardNumberByte = null, validityDateByte = null;
 
@@ -178,8 +178,27 @@ public class SecureServer {
 		}
 	}
 
+	public boolean sendQueryCard(String name){
+
+		try{
+			String query = "SELECT * FROM user_profile";
+			p = conn.prepareStatement(query);
+			rs = p.executeQuery();
+			while (rs.next())
+			{
+				String user = rs.getString("nome");
+				if(user.equals(name)){
+					return true;
+				}
+			}
+		} catch (Exception e){
+			System.out.println("Error sending query to the database");
+		}
+		return false;
+	}
+
 	/*Send querys to the database */
-	public boolean SendQueryLogin(String user, String pass){
+	public boolean sendQueryLogin(String user, String pass){
 
 		String password = null;
 		String name = null;
