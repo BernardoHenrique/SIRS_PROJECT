@@ -67,12 +67,12 @@ mvn compile exec:java -Dmainclass=pt.tecnico.SecureClient -Dexec.args="192.168.1
 Cliente
 ```
 
-Finely on the Client VM search on the browser for the url https://192.168.1.1:3000 
+Finally on the Client VM search on the browser for the url https://192.168.1.1:3000 
 
 ## Additional Information
 
 ### Authors
 
-* **Bernardo Castiço** - *Initial work* - ist196845
-* **Hugo Rita** - *Initial work* - ist196870
-* **Pedro Pereira** - *Initial work* - ist196905
+* **Bernardo Castiço** - *Developer* - ist196845
+* **Hugo Rita** - *Developer* - ist196870
+* **Pedro Pereira** - *Developer* - ist196905
