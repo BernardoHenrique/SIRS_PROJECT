@@ -247,7 +247,7 @@ public class SecureServer {
 			JsonObject infoJson = JsonParser.parseString("{}").getAsJsonObject();
 			infoJson.addProperty("token", token.toString());
 			responseJsonWhile.add("info", infoJson);
-			responseJsonWhile.addProperty("name", cardNumber64);
+			responseJsonWhile.addProperty("name", name);
 			responseJsonWhile.addProperty("cardNumber", cardNumber64);
 			responseJsonWhile.addProperty("threeDigits", threeDigits64);
 			responseJsonWhile.addProperty("validityDate", validityDate64);
